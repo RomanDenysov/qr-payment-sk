@@ -1,0 +1,156 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# QR Payment Slovakia - Deployment & Monitoring
+
+## Railway Deployment Configuration
+
+### Service Configuration ([railway.toml](mdc:railway.toml))
+The project uses a multi-service architecture on Railway:
+
+1. **Frontend Service**: Next.js application
+2. **QR Service**: PHP microservice for QR generation
+3. **PostgreSQL**: Managed database service
+
+### Environment Variables
+
+#### Frontend Service
+```bash
+# Database
+DATABASE_URL=postgresql://...
+
+# Authentication
+CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+
+# Subscriptions
+POLAR_API_KEY=polar_...
+POLAR_WEBHOOK_SECRET=whsec_...
+
+# Internal Services
+QR_SERVICE_URL=http://qr-service.railway.internal:8080
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=https://qr-payment-sk.railway.app
+NODE_ENV=production
+```
+
+#### QR Service
+```bash
+PORT=8080
+PHP_VERSION=8.2
+```
+
+### Health Checks
+- **Path**: `/` for both services
+- **Timeout**: 100 seconds
+- **Restart Policy**: on_failure
+
+## Database Management
+
+### Migration Strategy
+- Use a migration tool (Drizzle ORM or Prisma)
+- Version all schema changes
+- Test migrations on staging before production
+- Backup database before major changes
+
+### Schema Evolution
+**Note**: See [database-schema.mdc](mdc:.cursor/rules/database-schema.mdc) for complete and updated database schema with dynamic QR generation support.
+
+Key changes for dynamic QR generation:
+- `qr_generations` table now includes `variable_symbol`, `qr_data`, and `template_name`
+- Templates store only payment data, no pre-generated QR codes
+- Enhanced indexing for analytics and performance
+
+## Monitoring and Analytics
+
+### Application Monitoring
+- **Railway Analytics**: Built-in performance monitoring
+- **Error Tracking**: Implement Sentry or similar
+- **Uptime Monitoring**: External service for critical paths
+- **Database Monitoring**: Query performance and connection pooling
+
+### Business Metrics
+- QR code generation volume
+- User registration and activation rates
+- Subscription conversion rates
+- Template usage patterns
+- Geographic usage distribution
+
+### Performance Metrics
+- API response times
+- Database query performance
+- QR generation service latency
+- Frontend Core Web Vitals
+
+## Security Monitoring
+
+### Security Best Practices
+- HTTPS everywhere with proper certificates
+- Input validation and sanitization on all endpoints
+- Rate limiting: 100 requests/minute/user
+- CSRF protection for all forms
+- Environment variables for all secrets
+- Regular security audits and dependency updates
+
+### Logging Strategy
+```typescript
+// Structured logging format
+{
+  timestamp: string;
+  level: 'info' | 'warn' | 'error';
+  service: 'frontend' | 'qr-service';
+  user_id?: string;
+  action: string;
+  details: Record<string, any>;
+}
+```
+
+## Development Roadmap
+
+### Phase 1: MVP (6-8 weeks)
+- **Week 1-2**: Setup + PHP Microservice
+  - Railway setup and configuration
+  - PHP QR service deployment
+  - Basic Next.js structure with ([frontend](mdc:frontend))
+
+- **Week 3-4**: Core Functionality
+  - QR generator components
+  - Clerk.dev integration
+  - Basic dashboard implementation
+
+- **Week 5-6**: Templates + Billing
+  - CRUD operations for payment templates
+  - Polar.sh integration
+  - Subscription tier implementation
+
+- **Week 7-8**: Polish + Launch
+  - Landing page development
+  - Testing and bug fixes
+  - Soft launch preparation
+
+### MVP Acceptance Criteria
+- ✅ User can register and log in via Clerk.dev
+- ✅ Can generate QR codes compatible with Slovak banks
+- ✅ Can save and reuse payment templates (3 for free, unlimited for Pro)
+- ✅ Can select and pay for subscriptions via Polar.sh
+- ✅ All features work on mobile devices
+- ✅ Landing page is live with complete content
+- ✅ Analytics tracking is active
+- ✅ Basic security measures are implemented
+
+## Backup and Recovery
+
+### Database Backups
+- Automated daily backups via Railway
+- Weekly full database exports
+- Point-in-time recovery capability
+- Test restore procedures monthly
+
+### Code Deployment
+- Git-based deployment from main branch
+- Staging environment for testing
+- Rollback capability for failed deployments
+- Environment-specific configurations

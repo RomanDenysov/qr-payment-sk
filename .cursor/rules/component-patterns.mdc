@@ -1,0 +1,104 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Component Patterns for QR System
+
+## Overview Page Structure
+
+The main dashboard at [frontend/app/(app)/overview/page.tsx](mdc:frontend/app/(app)/overview/page.tsx) follows this pattern:
+
+```typescript
+export default function OverviewPage() {
+  return (
+    <div className="space-y-8 p-6">
+      <QuickStats />        // Revenue, transactions, QR counts
+      <QuickActions />      // Template usage, bulk generation
+      <PopularTemplates />  // Most used payment templates
+      <RecentActivity />    // Transaction history feed
+    </div>
+  );
+}
+```
+
+## Template Component Pattern
+
+Payment templates should follow this structure:
+
+```typescript
+interface TemplateCardProps {
+  template: PaymentTemplate;
+  onGenerateQR: (template: PaymentTemplate) => void;
+}
+
+function TemplateCard({ template, onGenerateQR }: TemplateCardProps) {
+  return (
+    <Card className="group hover:shadow-md transition-shadow cursor-pointer">
+      <CardHeader>
+        <div className="flex items-center space-x-3">
+          <div className={`w-10 h-10 ${template.color} rounded-lg`}>
+            {template.icon}
+          </div>
+          <CardTitle>{template.name}</CardTitle>
+          <Badge>{template.usageCount}x used</Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p>€{template.amount}</p>
+        <Button onClick={() => onGenerateQR(template)}>
+          Generate QR
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+## QR Generation Component
+
+```typescript
+interface QRDisplayProps {
+  transaction: GeneratedTransaction;
+  isLoading: boolean;
+}
+
+function QRDisplay({ transaction, isLoading }: QRDisplayProps) {
+  if (isLoading) {
+    return <LoadingSpinner>Generating QR...</LoadingSpinner>;
+  }
+
+  return (
+    <div className="text-center space-y-4">
+      <QRCode value={transaction.qrData} size={300} />
+      <h2 className="text-2xl font-bold">€{transaction.amount}</h2>
+      <p className="text-muted-foreground">{transaction.templateName}</p>
+      <p className="text-sm">Variable Symbol: {transaction.variableSymbol}</p>
+      <div className="flex gap-2">
+        <Button>Download</Button>
+        <Button variant="outline">Generate New</Button>
+      </div>
+    </div>
+  );
+}
+```
+
+## Analytics Components
+
+Stats components in [frontend/app/(app)/overview/components/](mdc:frontend/app/(app)/overview/components/) should show:
+
+- **Quick Stats**: Revenue, transaction count, QR generations, active users
+- **Recent Activity**: Latest QR generations with status indicators
+- **Template Performance**: Usage counts and revenue per template
+
+## UI Component Imports
+
+Use consistent imports from [frontend/components/ui/](mdc:frontend/components/ui):
+
+```typescript
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { Button } from '~/components/ui/button';
+import { Badge } from '~/components/ui/badge';
+```
+
+All components should follow shadcn/ui patterns with proper TypeScript interfaces and responsive design.

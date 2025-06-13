@@ -1,0 +1,33 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# QR Generation System Architecture
+
+## 🎯 Core Decision: Dynamic QR Generation
+
+This system implements **dynamic QR code generation** instead of static pre-generated QR codes.
+
+### Architecture Components
+
+- **Frontend**: [frontend/](mdc:frontend) - Next.js application with user interface, templates, analytics, and Clerk authentication
+- **QR Service**: [qr-service/](mdc:qr-service) - PHP microservice for BySquare QR code generation
+- **Database**: PostgreSQL - User profiles, templates (data only), transaction history, analytics
+
+### Key Technical Principles
+
+1. **Templates Store Data Only** - No pre-generated QR codes, only payment data
+2. **Unique Variable Symbols** - Each transaction gets 8-digit unique identifier for tracking
+3. **Complete Analytics** - Full transaction history for business intelligence
+4. **2-Second Generation Time** - Acceptable UX trade-off for dynamic approach
+
+### Data Flow
+
+1. User selects payment template (amount, description, IBAN)
+2. System generates unique variable symbol
+3. PHP service creates BySquare QR string
+4. Transaction record saved for analytics
+5. QR code displayed to customer
+
+This architecture enables professional accounting, complete transaction tracking, and scalable analytics.

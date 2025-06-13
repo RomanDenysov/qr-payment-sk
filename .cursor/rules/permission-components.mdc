@@ -1,0 +1,392 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# QR Platby SK - Permission Components & UI Patterns
+
+## 🎨 Core Permission Components
+
+### 1. UpgradePrompt Component
+```typescript
+interface UpgradePromptProps {
+  targetPlan: 'business' | 'professional'
+  feature: string
+  currentUsage?: number
+  limit?: number
+  variant?: 'modal' | 'banner' | 'inline' | 'toast'
+  onUpgrade?: () => void
+  onDismiss?: () => void
+}
+
+// Usage in components
+<UpgradePrompt 
+  targetPlan="business"
+  feature="Template Creation"
+  currentUsage={1}
+  limit={1}
+  variant="modal"
+/>
+```
+
+### 2. FeatureGate Component
+```typescript
+interface FeatureGateProps {
+  children: React.ReactNode
+  permission: string
+  fallback?: React.ReactNode
+  showUpgrade?: boolean
+  upgradeProps?: Partial<UpgradePromptProps>
+}
+
+// Usage example
+<FeatureGate 
+  permission="can_bulk_generate"
+  fallback={<UpgradePrompt targetPlan="business" feature="Bulk Generation" />}
+>
+  <BulkGenerationForm />
+</FeatureGate>
+```
+
+### 3. UsageIndicator Component
+```typescript
+interface UsageIndicatorProps {
+  resource: 'templates' | 'qr_codes' | 'exports' | 'api_calls'
+  current: number
+  limit: number | -1
+  period?: 'daily' | 'monthly' | 'hourly'
+  variant?: 'progress' | 'badge' | 'chart'
+  showUpgrade?: boolean
+}
+
+// Usage example
+<UsageIndicator 
+  resource="qr_codes"
+  current={45}
+  limit={50}
+  period="monthly"
+  variant="progress"
+  showUpgrade={true}
+/>
+```
+
+### 4. PlanBadge Component
+```typescript
+interface PlanBadgeProps {
+  plan: 'starter' | 'business' | 'professional'
+  size?: 'sm' | 'md' | 'lg'
+  variant?: 'default' | 'outline' | 'gradient'
+  showPrice?: boolean
+}
+
+// Usage
+<PlanBadge plan="professional" variant="gradient" showPrice />
+```
+
+## 🔒 Permission Hook Patterns
+
+### 1. usePermissions Hook
+```typescript
+export function usePermissions() {
+  const { has } = useHas() // Clerk hook
+  const { user } = useUser()
+  
+  const permissions = useMemo(() => ({
+    // Template permissions
+    canCreateTemplate: has('5_templates') || has('unlimited_templates'),
+    canDuplicateTemplate: has('5_templates') || has('unlimited_templates'),
+    canShareTemplate: has('5_templates') || has('unlimited_templates'),
+    canCollaborateTemplate: has('unlimited_templates'),
+    
+    // QR Generation permissions
+    canBulkGenerate: has('bulk_generation'),
+    canScheduleGeneration: has('unlimited_qr'),
+    canCustomizeQR: has('5_templates') || has('unlimited_templates'),
+    canGenerateDynamic: has('5_templates') || has('unlimited_templates'),
+    
+    // Analytics permissions
+    canViewDetailedStats: has('advanced_analytics'),
+    canExportAnalytics: has('advanced_analytics'),
+    canCreateReports: has('unlimited_templates'),
+    canScheduleReports: has('unlimited_templates'),
+    canSetupAlerts: has('unlimited_templates'),
+    
+    // Integration permissions
+    canAccessAPI: has('api_access'),
+    canUseWebhooks: has('api_access'),
+    canUseSDK: has('api_access'),
+    
+    // Branding permissions
+    canCustomizeBranding: has('5_templates') || has('unlimited_templates'),
+    canWhiteLabel: has('white_label'),
+    canUploadLogo: has('5_templates') || has('unlimited_templates'),
+    canCustomDomains: has('white_label'),
+    canCustomCSS: has('white_label'),
+    
+    // Export permissions
+    canExportQR: has('5_templates') || has('unlimited_templates'),
+    canBulkDownload: has('5_templates') || has('unlimited_templates'),
+    canEmailDelivery: has('unlimited_templates'),
+    canScheduleExports: has('unlimited_templates')
+  }), [has])
+  
+  return permissions
+}
+```
+
+### 2. useUsageTracking Hook
+```typescript
+export function useUsageTracking(resource: string) {
+  const { user } = useUser()
+  const [usage, setUsage] = useState<UsageData | null>(null)
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    if (!user?.id) return
+    
+    fetchUsageData(user.id, resource)
+      .then(setUsage)
+      .finally(() => setLoading(false))
+  }, [user?.id, resource])
+  
+  const isLimitReached = usage && usage.limit !== -1 && usage.current >= usage.limit
+  const isNearLimit = usage && usage.limit !== -1 && usage.current / usage.limit >= 0.8
+  const remaining = usage?.limit === -1 ? Infinity : Math.max(0, (usage?.limit || 0) - (usage?.current || 0))
+  
+  return {
+    usage,
+    loading,
+    isLimitReached,
+    isNearLimit,
+    remaining,
+    refetch: () => fetchUsageData(user?.id!, resource).then(setUsage)
+  }
+}
+```
+
+### 3. useUpgradeFlow Hook
+```typescript
+export function useUpgradeFlow() {
+  const { user } = useUser()
+  const router = useRouter()
+  
+  const getCurrentPlan = () => {
+    if (user?.has?.('unlimited_templates')) return 'professional'
+    if (user?.has?.('5_templates')) return 'business'
+    return 'starter'
+  }
+  
+  const getUpgradeTarget = (feature: string) => {
+    const currentPlan = getCurrentPlan()
+    
+    // Define feature -> plan mapping
+    const featurePlanMap: Record<string, 'business' | 'professional'> = {
+      'bulk_generation': 'business',
+      'advanced_analytics': 'business',
+      'api_access': 'professional',
+      'white_label': 'professional',
+      'custom_domains': 'professional'
+    }
+    
+    const requiredPlan = featurePlanMap[feature]
+    
+    if (currentPlan === 'starter' && requiredPlan) {
+      return requiredPlan
+    }
+    
+    if (currentPlan === 'business' && requiredPlan === 'professional') {
+      return 'professional'
+    }
+    
+    return null
+  }
+  
+  const initiateUpgrade = (targetPlan: 'business' | 'professional') => {
+    // Track upgrade attempt
+    analytics.track('upgrade_initiated', {
+      from_plan: getCurrentPlan(),
+      to_plan: targetPlan,
+      source: 'permission_gate'
+    })
+    
+    // Redirect to billing page
+    router.push(`/billing?plan=${targetPlan}`)
+  }
+  
+  return {
+    currentPlan: getCurrentPlan(),
+    getUpgradeTarget,
+    initiateUpgrade
+  }
+}
+```
+
+## 🎯 Component Implementation Examples
+
+### 1. Template Creation with Permission Gate
+```typescript
+function CreateTemplateButton() {
+  const permissions = usePermissions()
+  const { usage, isLimitReached } = useUsageTracking('templates')
+  const { getUpgradeTarget, initiateUpgrade } = useUpgradeFlow()
+  
+  if (!permissions.canCreateTemplate || isLimitReached) {
+    const targetPlan = getUpgradeTarget('template_creation')
+    
+    return (
+      <UpgradePrompt
+        targetPlan={targetPlan || 'business'}
+        feature="Template Creation"
+        currentUsage={usage?.current}
+        limit={usage?.limit}
+        onUpgrade={() => initiateUpgrade(targetPlan || 'business')}
+      />
+    )
+  }
+  
+  return <Button onClick={createTemplate}>Create Template</Button>
+}
+```
+
+### 2. Bulk Generation Feature Gate
+```tsx
+function BulkGenerationSection() {
+  const permissions = usePermissions()
+  
+  return (
+    <FeatureGate
+      permission="bulk_generation"
+      fallback={
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <BulkIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-4 text-lg font-medium text-gray-900">
+            Bulk Generation Available in Business Plan
+          </h3>
+          <p className="mt-2 text-sm text-gray-500">
+            Generate up to 50 QR codes at once with our Business plan
+          </p>
+          <UpgradePrompt 
+            targetPlan="business" 
+            feature="Bulk Generation"
+            variant="inline"
+          />
+        </div>
+      }
+    >
+      <BulkGenerationForm />
+    </FeatureGate>
+  )
+}
+```
+
+### 3. API Access Component
+```tsx
+function APIAccessPanel() {
+  const permissions = usePermissions()
+  const { usage } = useUsageTracking('api_calls')
+  
+  if (!permissions.canAccessAPI) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center gap-4">
+          <CodeIcon className="h-8 w-8 text-gray-400" />
+          <div>
+            <h3 className="text-lg font-medium">API Access</h3>
+            <p className="text-sm text-gray-500">
+              Integrate QR generation into your applications
+            </p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <UpgradePrompt 
+            targetPlan="professional"
+            feature="API Access"
+            variant="banner"
+          />
+        </div>
+      </Card>
+    )
+  }
+  
+  return (
+    <Card className="p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <CodeIcon className="h-8 w-8 text-green-500" />
+          <div>
+            <h3 className="text-lg font-medium">API Access</h3>
+            <p className="text-sm text-gray-500">
+              {usage && (
+                <span>
+                  {usage.current.toLocaleString()} / {usage.limit === -1 ? '∞' : usage.limit.toLocaleString()} calls this hour
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+        <Button variant="outline" onClick={() => router.push('/api-docs')}>
+          View Documentation
+        </Button>
+      </div>
+      
+      {usage && usage.limit !== -1 && (
+        <div className="mt-4">
+          <UsageIndicator
+            resource="api_calls"
+            current={usage.current}
+            limit={usage.limit}
+            period="hourly"
+            variant="progress"
+          />
+        </div>
+      )}
+    </Card>
+  )
+}
+```
+
+## 📦 Component File Structure
+
+```
+frontend/components/
+├── permissions/
+│   ├── FeatureGate.tsx
+│   ├── UpgradePrompt.tsx
+│   ├── UsageIndicator.tsx
+│   ├── PlanBadge.tsx
+│   └── index.ts
+├── billing/
+│   ├── PlanComparison.tsx
+│   ├── BillingPanel.tsx
+│   ├── UpgradeFlow.tsx
+│   └── index.ts
+└── shared/
+    ├── PermissionGuard.tsx
+    └── ConditionalRender.tsx
+```
+
+## 🎨 Styling Guidelines
+
+### Permission State Colors
+```css
+/* Plan colors */
+.plan-starter { @apply bg-gray-100 text-gray-800 border-gray-300; }
+.plan-business { @apply bg-blue-100 text-blue-800 border-blue-300; }
+.plan-professional { @apply bg-purple-100 text-purple-800 border-purple-300; }
+
+/* Usage indicators */
+.usage-safe { @apply text-green-600 bg-green-50; }
+.usage-warning { @apply text-yellow-600 bg-yellow-50; }
+.usage-danger { @apply text-red-600 bg-red-50; }
+
+/* Feature gates */
+.feature-locked { @apply opacity-50 pointer-events-none; }
+.feature-available { @apply opacity-100; }
+```
+
+## 🔄 Key Implementation Files
+
+- **Hooks**: [hooks/usePermissions.ts](mdc:frontend/hooks/usePermissions.ts)
+- **Components**: [components/permissions/](mdc:frontend/components/permissions)
+- **Utils**: [lib/permission-helpers.ts](mdc:frontend/lib/permission-helpers.ts)
+- **Types**: [types/permissions.ts](mdc:frontend/types/permissions.ts)

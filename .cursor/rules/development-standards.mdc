@@ -1,0 +1,112 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# QR Payment Slovakia - Development Standards
+
+## Code Style and Conventions
+
+### TypeScript Standards
+- Use strict TypeScript configuration ([tsconfig.json](mdc:frontend/tsconfig.json))
+- Define interfaces for all API responses and database models
+- Use type-safe environment variable handling
+- Implement proper error types for API responses
+
+### Component Architecture
+- Use functional components with TypeScript interfaces (see [component-patterns.mdc](mdc:.cursor/rules/component-patterns.mdc))
+- Implement proper prop validation with TypeScript
+- Follow the component composition pattern
+- Extract reusable logic into custom hooks in [hooks](mdc:frontend/hooks)
+
+### Naming Conventions
+- **Components**: PascalCase (e.g., `QRGenerator.tsx`)
+- **Files**: kebab-case for utilities, PascalCase for components
+- **API Routes**: RESTful naming with proper HTTP methods
+- **Database**: snake_case for table and column names (see [database-schema.mdc](mdc:.cursor/rules/database-schema.mdc))
+- **Environment Variables**: UPPER_SNAKE_CASE
+
+## API Design Standards
+
+### Route Structure
+```
+/api/
+├── auth/               # Authentication endpoints
+├── qr/                 # QR generation endpoints
+├── templates/          # Payment template CRUD
+├── subscriptions/      # Billing and subscription management
+└── users/              # User profile management
+```
+
+### Response Format
+```typescript
+// Success Response
+{
+  success: true,
+  data: T,
+  message?: string
+}
+
+// Error Response
+{
+  success: false,
+  error: {
+    code: string,
+    message: string,
+    details?: any
+  }
+}
+```
+
+## Security Standards
+
+### Input Validation
+- Validate all user inputs on both client and server
+- Use Zod schemas for API route validation
+- Implement IBAN validation for Slovak banks
+- Sanitize all user-generated content
+
+### Rate Limiting
+- Implement 100 requests/minute/user limit
+- Apply stricter limits for QR generation endpoints
+- Use IP-based limiting for unauthenticated requests
+
+### Environment Variables
+Store in Railway environment:
+- `DATABASE_URL`: Neon PostgreSQL connection
+- `CLERK_SECRET_KEY`: Clerk authentication
+- `POLAR_API_KEY`: Polar.sh subscription management
+- `QR_SERVICE_URL`: Internal service communication
+
+## Testing Standards
+
+### Frontend Testing
+- Unit tests for utility functions
+- Component testing with React Testing Library
+- Integration tests for API routes
+- E2E tests for critical user flows
+
+### Backend Testing
+- API route testing with proper mocking
+- Database integration tests
+- PHP service unit tests in [tests](mdc:qr-service/tests)
+
+## Performance Standards
+
+### Frontend Optimization
+- Use Next.js Image component for all images
+- Implement proper loading states
+- Use React.memo for expensive components
+- Implement code splitting for large features
+
+### API Optimization
+- Implement database query optimization
+- Use proper indexing on frequently queried fields
+- Implement caching where appropriate
+- Monitor API response times
+
+## Code Quality Tools
+- **Linting**: Biome ([biome.json](mdc:frontend/biome.json))
+- **Type Checking**: TypeScript strict mode
+- **Package Management**: pnpm ([pnpm-lock.yaml](mdc:frontend/pnpm-lock.yaml))
+- **Styling**: Tailwind CSS with [components.json](mdc:frontend/components.json)

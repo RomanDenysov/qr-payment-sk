@@ -1,0 +1,112 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Database Schema and Patterns
+
+## Core Tables
+
+### Payment Templates
+Templates store only payment data, never QR codes:
+
+```sql
+CREATE TABLE payment_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+  description TEXT,
+  iban VARCHAR(34) NOT NULL, -- Slovak IBAN format
+  color VARCHAR(20) DEFAULT '#blue',
+  icon VARCHAR(50) DEFAULT 'payment',
+  usage_count INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_payment_templates_user_active 
+ON payment_templates(user_id, is_active);
+```
+
+### QR Generations (Transaction History)
+Every QR generation creates a trackable record:
+
+```sql
+CREATE TABLE qr_generations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  template_id UUID REFERENCES payment_templates(id) ON DELETE SET NULL,
+  template_name VARCHAR(100) NOT NULL, -- Preserved if template deleted
+  amount DECIMAL(10,2) NOT NULL,
+  variable_symbol BIGINT NOT NULL UNIQUE,
+  qr_data TEXT NOT NULL, -- BySquare QR string
+  iban VARCHAR(34) NOT NULL,
+  description TEXT,
+  generated_at TIMESTAMP DEFAULT NOW(),
+  status VARCHAR(20) DEFAULT 'generated' 
+    CHECK (status IN ('generated', 'shown', 'paid'))
+);
+
+CREATE INDEX idx_qr_generations_user_date 
+ON qr_generations(user_id, generated_at DESC);
+
+CREATE INDEX idx_qr_generations_variable_symbol 
+ON qr_generations(variable_symbol);
+```
+
+### Users Table
+Basic user management with Clerk integration:
+
+```sql
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clerk_id VARCHAR(100) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  business_name VARCHAR(200),
+  default_iban VARCHAR(34), -- Primary business IBAN
+  subscription_plan VARCHAR(50) DEFAULT 'free',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## Data Integrity Rules
+
+1. **Variable Symbol Uniqueness**: Each QR generation must have unique 8-digit variable symbol
+2. **Template Preservation**: When template is deleted, transaction history preserves template_name
+3. **IBAN Validation**: All IBANs must follow Slovak format (SK + 22 digits)
+4. **Amount Constraints**: Amounts must be positive decimals with 2 decimal places
+
+## Analytics Queries
+
+### Daily Revenue Summary
+```sql
+SELECT 
+  DATE(generated_at) as date,
+  COUNT(*) as qr_count,
+  SUM(amount) as total_revenue,
+  COUNT(DISTINCT template_id) as unique_templates
+FROM qr_generations 
+WHERE user_id = $1 
+  AND generated_at >= NOW() - INTERVAL '30 days'
+GROUP BY DATE(generated_at)
+ORDER BY date DESC;
+```
+
+### Template Performance
+```sql
+SELECT 
+  t.name,
+  t.usage_count,
+  SUM(qg.amount) as total_revenue,
+  COUNT(qg.id) as generations_count
+FROM payment_templates t
+LEFT JOIN qr_generations qg ON t.id = qg.template_id
+WHERE t.user_id = $1 AND t.is_active = true
+GROUP BY t.id, t.name, t.usage_count
+ORDER BY t.usage_count DESC;
+```
+
+This schema supports the dynamic QR generation approach with complete transaction tracking and analytics.

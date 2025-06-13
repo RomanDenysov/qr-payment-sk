@@ -1,0 +1,197 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# QR Platby SK - Permissions System
+
+## 🔐 Core Permission Architecture
+
+The application uses a three-tier subscription model (Starter, Business, Professional) with feature gates implemented through Clerk Billing.
+
+### Plan Structure
+- **STARTER** (Free): Basic functionality with strict limits
+- **BUSINESS** (€5.99/month): Enhanced features for small businesses
+- **PROFESSIONAL** (€16.99/month): Full-featured unlimited plan
+
+## 📋 Permission Categories
+
+### 1. Template Management
+```typescript
+interface TemplatePermissions {
+  max_templates: number | -1        // -1 = unlimited
+  can_create_template: boolean
+  can_edit_template: boolean
+  can_delete_template: boolean
+  can_duplicate_template: boolean
+  can_share_template: boolean
+  can_collaborate_templates: boolean // Pro only
+  template_types: string[]
+}
+```
+
+### 2. QR Generation Limits
+```typescript
+interface QRGenerationPermissions {
+  monthly_qr_limit: number | -1     // -1 = unlimited
+  bulk_generation: boolean
+  max_bulk_size: number
+  can_generate_dynamic: boolean
+  can_customize_qr: boolean
+  qr_formats: string[]
+  qr_sizes: string[]
+  can_schedule_generation: boolean
+  can_auto_generate: boolean        // Pro only
+}
+```
+
+### 3. Analytics & Reporting
+```typescript
+interface AnalyticsPermissions {
+  analytics_history_days: number | -1
+  can_view_basic_stats: boolean
+  can_view_detailed_stats: boolean
+  can_export_analytics: boolean
+  real_time_tracking: boolean
+  custom_date_ranges: boolean
+  advanced_filters: boolean
+  can_create_reports: boolean       // Pro only
+  can_schedule_reports: boolean     // Pro only
+  can_setup_alerts: boolean         // Pro only
+  advanced_segmentation: boolean    // Pro only
+}
+```
+
+### 4. Export & Delivery
+```typescript
+interface ExportPermissions {
+  can_export_qr: boolean
+  can_export_data: boolean
+  export_formats: string[]
+  can_bulk_download: boolean
+  can_email_delivery: boolean
+  max_export_size: number | -1
+  can_schedule_exports: boolean     // Pro only
+  can_customize_exports: boolean    // Pro only
+}
+```
+
+### 5. Integrations & API
+```typescript
+interface IntegrationPermissions {
+  api_access: boolean
+  webhooks: boolean
+  zapier_integration: boolean
+  can_use_sdk: boolean
+  api_rate_limit: number            // requests per hour
+  can_create_custom_integrations: boolean // Pro only
+}
+```
+
+### 6. Customization & Branding
+```typescript
+interface BrandingPermissions {
+  can_customize_branding: boolean
+  can_white_label: boolean          // Pro only
+  can_custom_colors: boolean
+  can_upload_logo: boolean
+  can_custom_domains: boolean       // Pro only
+  can_custom_css: boolean           // Pro only
+  max_logo_size: string
+  can_custom_fonts: boolean         // Pro only
+}
+```
+
+### 7. Support & Service
+```typescript
+interface SupportPermissions {
+  support_level: 'community' | 'email' | 'priority'
+  can_contact_support: boolean
+  response_time: string | null
+  can_request_features: boolean
+  has_onboarding: boolean
+  has_knowledge_base: boolean
+  has_dedicated_manager: boolean    // Enterprise only
+  can_schedule_calls: boolean       // Pro only
+  has_slack_support: boolean        // Enterprise only
+}
+```
+
+## 🎯 Implementation Guidelines
+
+### Clerk Feature Gates Setup
+```typescript
+// Define in Clerk Dashboard
+const CLERK_FEATURES = {
+  // Template limits
+  '5_templates': 'business',
+  'unlimited_templates': 'professional',
+  
+  // QR Generation
+  '1000_qr_monthly': 'business',
+  'unlimited_qr': 'professional',
+  'bulk_generation': 'business,professional',
+  
+  // Advanced features
+  'advanced_analytics': 'business,professional',
+  'api_access': 'professional',
+  'white_label': 'professional',
+  'custom_domains': 'professional'
+} as const
+```
+
+### Permission Validation Pattern
+```typescript
+// Backend validation helper
+export async function validatePermission(
+  userId: string,
+  permission: keyof AllPermissions,
+  value?: any
+): Promise<boolean> {
+  const userPlan = await getUserPlan(userId)
+  const permissions = getPermissionsForPlan(userPlan)
+  
+  if (typeof permissions[permission] === 'boolean') {
+    return permissions[permission] as boolean
+  }
+  
+  if (typeof permissions[permission] === 'number') {
+    const limit = permissions[permission] as number
+    return limit === -1 || value <= limit
+  }
+  
+  return false
+}
+```
+
+### Frontend Permission Hooks
+```typescript
+// Custom hook for permission checking
+export function usePermissions() {
+  const { has } = useHas()
+  const { user } = useUser()
+  
+  return {
+    canCreateTemplate: has('5_templates') || has('unlimited_templates'),
+    canBulkGenerate: has('bulk_generation'),
+    canAccessAPI: has('api_access'),
+    canWhiteLabel: has('white_label'),
+    hasAdvancedAnalytics: has('advanced_analytics')
+  }
+}
+```
+
+## 🚀 Key Implementation Files
+
+- **Frontend**: [hooks/usePermissions.ts](mdc:frontend/hooks/usePermissions.ts)
+- **Backend**: [database/permissions.ts](mdc:qr-service/src/permissions.ts)
+- **Validation**: [lib/permission-validator.ts](mdc:frontend/lib/permission-validator.ts)
+- **Components**: [components/shared/UpgradePrompt.tsx](mdc:frontend/components/shared/UpgradePrompt.tsx)
+
+## ⚠️ Critical Rules
+
+1. **Always validate permissions on both frontend and backend**
+2. **Use feature gates for UI/UX, but enforce limits server-side**
+3. **Gracefully handle permission errors with upgrade prompts**
+4. **Track usage against limits in real-time**
+5. **Implement proper error handling for exceeded limits**

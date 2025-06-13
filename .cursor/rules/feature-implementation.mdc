@@ -1,0 +1,178 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# QR Payment Slovakia - Feature Implementation Guide
+
+## Core Features Implementation
+
+### QR Code Generation
+**Note**: See [qr-generation-flow.mdc](mdc:.cursor/rules/qr-generation-flow.mdc) and [data-models.mdc](mdc:.cursor/rules/data-models.mdc) for detailed implementation.
+
+**Location**: `/api/qr/generate`
+**Dependencies**: PHP microservice ([qr-service](mdc:qr-service))
+
+**Key Requirements**:
+- Dynamic QR generation with unique variable symbols
+- Template-based payment data (no pre-generated QR codes)
+- Complete transaction tracking for analytics
+- BySquare standard compliance
+
+### User Authentication
+**Provider**: Clerk.dev
+**Implementation**: Server-side validation with middleware
+
+```typescript
+// User profile interface
+interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  iban?: string;
+  subscription_tier: 'free' | 'pro' | 'business';
+  company_name?: string;
+}
+```
+
+### Payment Templates
+**Location**: `/api/templates`
+**Database**: `payment_templates` table
+
+**CRUD Operations**:
+- `GET /api/templates` - List user templates
+- `POST /api/templates` - Create new template
+- `PUT /api/templates/[id]` - Update template
+- `DELETE /api/templates/[id]` - Delete template
+
+**Subscription Limits**:
+- Free: 3 templates maximum
+- Pro: Unlimited templates
+- Business: Unlimited templates
+
+### Subscription Management
+**Provider**: Polar.sh
+**Plans**: Free, Pro (€5/month), Business (€15/month)
+
+```typescript
+interface SubscriptionPlan {
+  id: string;
+  name: 'free' | 'pro' | 'business';
+  price: number;
+  features: {
+    templates: number | 'unlimited';
+    qr_generations: number | 'unlimited';
+    analytics: boolean;
+    priority_support: boolean;
+  };
+}
+```
+
+## Page Implementation
+
+### Dashboard (`/dashboard`)
+**Components Required**:
+- QR Generation form
+- Template management
+- Usage statistics
+- Subscription status
+
+### Templates (`/templates`)
+**Features**:
+- Template CRUD interface
+- Quick QR generation from templates
+- Template duplication
+- Import/export functionality
+
+### Analytics (`/analytics`)
+**Free Tier**: Basic generation count
+**Pro/Business**: Detailed analytics with charts
+
+### Settings (`/settings`)
+**Sections**:
+- Profile information
+- Default IBAN setting
+- Subscription management
+- API key management (Business tier)
+
+## Component Implementation Guidelines
+
+### Form Components
+- Use React Hook Form with Zod validation
+- Implement proper error handling and display
+- Add loading states for all async operations
+- Include IBAN validation with real-time feedback
+
+### QR Code Display
+- Show QR code preview
+- Provide download options (PNG, SVG)
+- Include size selection
+- Add sharing functionality
+
+### Template Components
+- Sortable and filterable template list
+- Quick action buttons (edit, delete, duplicate)
+- Bulk operations for power users
+- Template preview with QR generation
+
+## Error Handling
+
+### Client-Side
+```typescript
+// Error boundary for React components
+// Toast notifications for user feedback
+// Loading states with proper UX
+// Form validation with immediate feedback
+```
+
+### Server-Side
+```typescript
+// Structured error responses
+// Proper HTTP status codes
+// Error logging for monitoring
+// Graceful degradation
+```
+
+## Integration Patterns
+
+### Clerk Integration
+```typescript
+// Middleware for route protection
+// User context throughout the app
+// Sign-in/sign-up flows
+// Profile management
+```
+
+### Polar.sh Integration
+```typescript
+// Webhook handling for subscription changes
+// Plan upgrade/downgrade flows
+// Payment method management
+// Invoice generation
+```
+
+### PHP Service Integration
+```typescript
+// HTTP client for QR generation
+// Error handling for service unavailability
+// Response caching for repeated requests
+// Health check monitoring
+```
+
+## IBAN Validation Rules
+
+### Slovak IBAN Format
+- Country code: SK
+- Check digits: 2 digits
+- Bank code: 4 digits
+- Account number: 10 digits
+- Total length: 24 characters
+- Example: SK3112000000198742637541
+
+### Major Slovak Banks
+- Slovenská sporiteľňa: 0900
+- VÚB banka: 0200
+- Tatra banka: 1100
+- ČSOB: 7500
+- UniCredit Bank: 1111
+- mBank: 8360
