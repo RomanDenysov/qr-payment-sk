@@ -25,7 +25,7 @@ const initialState = {
   inputs: null,
 };
 
-export function GetQrCard() {
+export function QRCard() {
   const [state, formAction, pending] = useActionState(
     generateQRCode,
     initialState
@@ -44,7 +44,7 @@ export function GetQrCard() {
 
   return (
     <>
-      <Card>
+      <Card className="shadow-xl">
         <CardHeader>
           <CardTitle>Vygeneruj QR kód</CardTitle>
           <CardDescription>
