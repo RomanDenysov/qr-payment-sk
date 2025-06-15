@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Header } from './components/header';
 
 type WebsiteLayoutProps = {
   readonly children: ReactNode;
@@ -6,8 +7,11 @@ type WebsiteLayoutProps = {
 
 export default function WebsiteLayout({ children }: WebsiteLayoutProps) {
   return (
-    <main className="container mx-auto flex flex-col items-center justify-center gap-4 p-4">
-      {children}
-    </main>
+    <>
+      <Header />
+      <main className="container mx-auto w-full max-w-7xl px-4">
+        {children}
+      </main>
+    </>
   );
 }
