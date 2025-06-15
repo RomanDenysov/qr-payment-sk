@@ -5,6 +5,7 @@ import {
   type ChangeEvent,
   type ChangeEventHandler,
   type FunctionComponent,
+  type KeyboardEventHandler,
   forwardRef,
 } from 'react';
 import {
@@ -13,11 +14,12 @@ import {
 } from 'react-number-format';
 
 const KEYDOWN_REGEX =
-  /^(?:[a-z0-9]|Backspace|Delete|Home|End|ArrowLeft|ArrowRight|Shift|CapsLock|Control|NumLock|Tab|Paste|Redo|Undo)$/i;
+  /^(?:[a-z0-9]|Backspace|Delete|Home|End|ArrowLeft|ArrowRight|Shift|CapsLock|Control|NumLock|Tab|Paste|Redo|Undo|Enter)$/i;
 const CHAR_REGEX = /^[a-z0-9]$/i;
 
 interface IBANInputProps extends NumberFormatBaseProps {
   onChange?: ChangeEventHandler<HTMLInputElement>;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 }
 
 const ibanFormatter = (value: string) =>
@@ -37,6 +39,7 @@ const getCaretBoundary = (value: string) =>
 
 const IBANInputDef: FunctionComponent<IBANInputProps> = ({
   onChange,
+  onKeyDown,
   ...props
 }) => (
   <NumberFormatBase
@@ -54,7 +57,13 @@ const IBANInputDef: FunctionComponent<IBANInputProps> = ({
         })
       )
     }
-    onKeyDown={(e) => !KEYDOWN_REGEX.test(e.key) && e.preventDefault()}
+    onKeyDown={(e) => {
+      if (KEYDOWN_REGEX.test(e.key)) {
+        onKeyDown?.(e);
+      } else {
+        e.preventDefault();
+      }
+    }}
   />
 );
 

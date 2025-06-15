@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Drawer,
   DrawerContent,
@@ -6,12 +8,29 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import { useQrCodeActions } from '@/hooks/useQrCodeActions';
+import { CopyIcon, DownloadIcon, ShareIcon } from 'lucide-react';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 
 export function ShowQrDrawer({ qrCodeUrl }: { qrCodeUrl: string }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (qrCodeUrl) {
+      setOpen(true);
+    }
+    return () => {
+      setOpen(false);
+    };
+  }, [qrCodeUrl]);
+
+  const { isLoading, handleCopyQR, handleShareQR, handleDownloadQR } =
+    useQrCodeActions(qrCodeUrl);
+
   return (
-    <Drawer>
+    <Drawer open={open} onOpenChange={setOpen}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>
@@ -30,8 +49,37 @@ export function ShowQrDrawer({ qrCodeUrl }: { qrCodeUrl: string }) {
               className="rounded-lg border"
             />
           </div>
-          <DrawerFooter>
-            <Button variant="outline">Zavrieť</Button>
+          <DrawerFooter className="flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCopyQR}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              <CopyIcon className="size-4" />
+              Kopírovať
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleShareQR}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              <ShareIcon className="size-4" />
+              Zdieľať
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDownloadQR}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              <DownloadIcon className="size-4" />
+              Stiahnuť
+            </Button>
           </DrawerFooter>
         </div>
       </DrawerContent>
