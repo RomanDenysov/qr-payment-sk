@@ -6,9 +6,8 @@ type WebsiteLayoutProps = {
 
 export default function WebsiteLayout({ children }: WebsiteLayoutProps) {
   return (
-    <div>
-      <h1>Website Layout</h1>
+    <main className="container mx-auto flex flex-col items-center justify-center gap-4 p-4">
       {children}
-    </div>
+    </main>
   );
 }

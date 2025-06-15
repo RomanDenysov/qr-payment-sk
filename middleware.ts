@@ -1,5 +1,8 @@
 import { clerkMiddleware } from '@clerk/nextjs/server';
 
+const publicRoutes = ['/', '/api/qr/generate'];
+const apiRoutes = ['/api/(.*)'];
+
 export default clerkMiddleware();
 
 export const config = {
