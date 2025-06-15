@@ -1,4 +1,3 @@
-import { SubmitButton } from '@/components/shared/submit-button';
 import {
   Card,
   CardContent,
@@ -8,6 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { GenerateQrForm } from './generate-qr-form';
+import { SubmitQrButton } from './submit-qr-button';
 
 export function GetQrCard() {
   return (
@@ -15,18 +15,15 @@ export function GetQrCard() {
       <CardHeader>
         <CardTitle>Vygeneruj QR kód</CardTitle>
         <CardDescription>
-          Vygeneruj QR kód pre platbu cez BySquare.
+          Vygeneruj QR kód pre platbu pomocou{' '}
+          <span className="font-medium text-primary">BySquare</span>.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <GenerateQrForm />
       </CardContent>
       <CardFooter className="flex justify-end">
-        <SubmitButton
-          formId="generate-qr-form"
-          title="Vygenerovať QR kód"
-          className="w-full"
-        />
+        <SubmitQrButton className="w-full" />
       </CardFooter>
     </Card>
   );

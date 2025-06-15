@@ -29,9 +29,10 @@ type GenerateQRCodeResponse = {
 };
 
 export async function generateQRCode(
-  prevState: GenerateQRCodeResponse,
+  _: GenerateQRCodeResponse,
   formData: FormData
 ): Promise<GenerateQRCodeResponse> {
+  await new Promise((resolve) => setTimeout(resolve, 4000));
   try {
     const rawData = {
       iban: formData.get('iban') as string,
@@ -71,7 +72,7 @@ export async function generateQRCode(
     });
 
     const qrCodeUrl = await QRCode.toDataURL(qrCode, {
-      width: 200,
+      width: 400,
       margin: 2,
       color: {
         dark: '#000000',
