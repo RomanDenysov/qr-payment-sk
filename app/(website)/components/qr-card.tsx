@@ -61,7 +61,7 @@ export function QRCard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="min-w-md space-y-4">
+          <div className="space-y-4 ">
             <form
               action={formAction}
               id="generate-qr-form"

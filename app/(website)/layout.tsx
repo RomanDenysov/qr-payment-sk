@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Footer } from './components/footer';
 import { Header } from './components/header';
 
 type WebsiteLayoutProps = {
@@ -9,9 +10,10 @@ export default function WebsiteLayout({ children }: WebsiteLayoutProps) {
   return (
     <>
       <Header />
-      <main className="container mx-auto w-full max-w-7xl px-4">
+      <main className="container mx-auto max-w-7xl px-4 md:px-6">
         {children}
       </main>
+      <Footer />
     </>
   );
 }

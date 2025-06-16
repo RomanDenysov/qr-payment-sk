@@ -1,11 +1,11 @@
 import { PricingTable } from '@clerk/nextjs';
-import { QRCard } from './components/qr-card';
+import { Hero } from './components/hero';
 
 export default function Home() {
   return (
     <>
-      <h1 className="font-bold text-4xl">Hello World</h1>
-      <QRCard />
+      <Hero />
+      {/* <QRCard /> */}
       <PricingTable />
     </>
   );
