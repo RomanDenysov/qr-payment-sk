@@ -1,9 +1,11 @@
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PricingTable } from '@clerk/nextjs';
 import { Suspense } from 'react';
+import { CTA } from './components/cta';
+import { FAQ } from './components/faq';
 import { Features } from './components/features';
 import { Hero } from './components/hero';
+import { Pricing } from './components/pricing';
 import { Stats } from './components/stats';
 
 // Stats loading component
@@ -51,7 +53,9 @@ export default function Home() {
         <Stats />
       </Suspense>
       <Features />
-      <PricingTable />
+      <Pricing />
+      <FAQ />
+      <CTA />
     </>
   );
 }
