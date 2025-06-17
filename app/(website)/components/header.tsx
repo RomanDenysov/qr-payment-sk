@@ -28,7 +28,7 @@ import { useState } from 'react';
 
 const navItems = [
   {
-    label: 'Ako to funguje',
+    label: 'Výhody',
     href: '#features',
   },
   {

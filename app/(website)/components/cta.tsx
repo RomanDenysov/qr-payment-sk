@@ -10,11 +10,11 @@ export function CTA() {
     <section
       id="cta"
       aria-label="Začnite dnes"
-      className="w-full py-20 lg:py-40"
+      className="group w-full py-20 lg:py-40"
     >
-      <FadeContainer className="mx-auto max-w-4xl px-4 md:px-6">
-        <FadeDiv className="group">
-          <CTADecorator>
+      <CTADecorator>
+        <FadeContainer className="mx-auto max-w-4xl px-4 md:px-6">
+          <FadeDiv className="group">
             <div className="flex flex-col items-center gap-8 p-12 text-center">
               <div className="flex flex-col items-center gap-4">
                 <Badge variant="outline" className="bg-background/80">
@@ -76,15 +76,15 @@ export function CTA() {
                 </div>
               </div>
             </div>
-          </CTADecorator>
-        </FadeDiv>
-      </FadeContainer>
+          </FadeDiv>
+        </FadeContainer>
+      </CTADecorator>
     </section>
   );
 }
 
 const CTADecorator = ({ children }: { children: ReactNode }) => (
-  <div className="relative mx-auto h-auto w-full max-w-4xl duration-200 [--color-border:color-mix(in_oklab,var(--color-zinc-950)8%,transparent)] group-hover:bg-white/5 dark:group-hover:bg-white/5 group-hover:[--color-border:color-mix(in_oklab,var(--color-zinc-950)15%,transparent)] dark:[--color-border:color-mix(in_oklab,var(--color-white)12%,transparent)] dark:group-hover:[--color-border:color-mix(in_oklab,var(--color-white)18%,transparent)]">
+  <div className="relative mx-auto h-auto w-full max-w-7xl duration-200 [--color-border:color-mix(in_oklab,var(--color-zinc-950)8%,transparent)] group-hover:bg-white/5 dark:group-hover:bg-white/5 group-hover:[--color-border:color-mix(in_oklab,var(--color-zinc-950)15%,transparent)] dark:[--color-border:color-mix(in_oklab,var(--color-white)12%,transparent)] dark:group-hover:[--color-border:color-mix(in_oklab,var(--color-white)18%,transparent)]">
     {/* Grid pattern background */}
     <div
       aria-hidden
@@ -93,7 +93,7 @@ const CTADecorator = ({ children }: { children: ReactNode }) => (
     {/* Radial gradient overlay to fade edges */}
     <div
       aria-hidden
-      className="absolute inset-0 rounded-xl bg-radial from-transparent via-transparent to-70% to-background"
+      className="absolute inset-0 rounded-xl bg-radial from-transparent via-transparent to-80% to-background"
     />
     {/* Subtle highlight in center */}
     <div
@@ -101,8 +101,6 @@ const CTADecorator = ({ children }: { children: ReactNode }) => (
       className="absolute inset-0 rounded-xl bg-radial from-white/5 via-transparent to-40% to-transparent dark:from-white/3"
     />
     {/* Content container */}
-    <div className="relative rounded-xl border border-border/50 bg-background/50 backdrop-blur-sm">
-      {children}
-    </div>
+    <div className="relative rounded-xl">{children}</div>
   </div>
 );

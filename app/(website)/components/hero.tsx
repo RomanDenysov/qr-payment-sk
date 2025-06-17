@@ -7,7 +7,7 @@ export function Hero() {
   return (
     <section
       id="hero"
-      aria-label="Hero"
+      aria-label="Hlavná sekcia"
       className="relative w-full py-20 lg:py-40"
     >
       <FadeContainer className="grid grid-cols-1 items-center gap-8 px-4 md:grid-cols-2 md:px-6">
@@ -20,15 +20,16 @@ export function Hero() {
           </FadeDiv>
           <div className="flex flex-col gap-4">
             <h1 className="text-center font-medium text-5xl tracking-tighter sm:text-7xl sm:leading-[4.5rem] md:text-left">
-              <FadeSpan>Prijímajte</FadeSpan> <FadeSpan>platby cez</FadeSpan>
+              <FadeSpan>Okamžité prevody s</FadeSpan>
               <br />
               <FadeSpan className="text-stroke">QR Platby</FadeSpan>
             </h1>
             <p className="max-w-xl text-balance text-center text-base text-muted-foreground tracking-tight sm:text-xl md:text-left">
-              <FadeSpan>Vytvorte QR kód za 10 sekúnd.</FadeSpan>{' '}
-              <FadeSpan>Zákazníci platia jedným skenovaním</FadeSpan>{' '}
-              <FadeSpan>– bez písania IBAN-u,</FadeSpan>{' '}
-              <FadeSpan>bez chýb,</FadeSpan> <FadeSpan>bez čakania.</FadeSpan>
+              <FadeSpan>Generátor BySquare QR kódov pre váš biznis.</FadeSpan>
+              <br />
+              <FadeSpan>Jednoducho, rýchlo, spoľahlivo</FadeSpan>{' '}
+              <FadeSpan>– bez chýb, bez čakania,</FadeSpan>{' '}
+              <FadeSpan>bez komplikácií.</FadeSpan>
             </p>
           </div>
         </div>
@@ -53,7 +54,7 @@ const HeroDecorator = ({ children }: { children: ReactNode }) => (
     {/* Radial gradient overlay to fade edges */}
     <div
       aria-hidden
-      className="absolute inset-0 bg-radial from-transparent via-transparent to-70% to-background"
+      className="absolute inset-0 bg-radial from-transparent via-transparent to-80% to-background"
     />
     {/* Subtle highlight in center */}
     <div

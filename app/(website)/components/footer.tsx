@@ -18,7 +18,7 @@ const footerSections: {
   {
     title: 'Produkt',
     links: [
-      { label: 'Ako to funguje', href: '#features' },
+      { label: 'Výhody', href: '#features' },
       { label: 'Cenník', href: '#pricing' },
       { label: 'FAQ', href: '#faq' },
     ],
