@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { validateSlovakIban } from '@/lib/format-utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -33,6 +34,10 @@ const profileSchema = z.object({
   defaultIban: z
     .string()
     .regex(/^SK\d{22}$/, 'Invalid Slovak IBAN format')
+    .refine(
+      (iban) => iban === '' || validateSlovakIban(iban),
+      'Invalid Slovak IBAN or incorrect checksum'
+    )
     .optional()
     .or(z.literal('')),
 });
@@ -87,13 +92,21 @@ export function ProfileSetupDialog({
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        if (!newOpen && onOpenChange) {
+          return;
+        }
+        onOpenChange?.(newOpen);
+      }}
+    >
+      <DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Complete Your Profile</DialogTitle>
           <DialogDescription>
             To start generating QR codes, please provide some basic information
-            about your business.
+            about your business. This is required to access the dashboard.
           </DialogDescription>
         </DialogHeader>
 
@@ -129,7 +142,7 @@ export function ProfileSetupDialog({
                   <FormLabel>Default IBAN (Optional)</FormLabel>
                   <FormControl>
                     <IBANInput
-                      placeholder="SK1234567890123456789012"
+                      placeholder="SK31 1200 0000 1987 4263 7541"
                       {...field}
                       disabled={isSubmitting}
                     />

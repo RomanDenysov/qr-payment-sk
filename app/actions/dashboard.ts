@@ -5,10 +5,11 @@ import {
   paymentTemplatesTable,
   profilesTable,
   qrGenerationsTable,
+  subscriptionsTable,
 } from '@/db/schema';
 import { unstable_cache } from '@/lib/unstable-cache';
 import { auth } from '@clerk/nextjs/server';
-import { and, count, desc, eq, gte } from 'drizzle-orm';
+import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
 
 // Helper function to get start of current month
 function getStartOfCurrentMonth(): Date {
@@ -22,6 +23,11 @@ export interface UserStats {
   templatesCount: number;
   monthlyGenerated: number;
   totalTemplates: number;
+  // Added fields for StatsCards compatibility
+  totalQrCodes: number; // Same as qrCodesGenerated
+  monthlyQrCodes: number; // Same as monthlyGenerated
+  usageLimit: number; // User's plan limit (-1 for unlimited)
+  totalAmount: string; // Total EUR amount processed
 }
 
 export interface QrGenerationHistory {
@@ -55,39 +61,65 @@ const getCachedUserStats = unstable_cache(
   async (profileId: string): Promise<UserStats> => {
     const startOfCurrentMonth = getStartOfCurrentMonth();
 
-    const [totalQrGenerated, templatesCount, monthlyGenerated] =
-      await Promise.all([
-        db
-          .select({ count: count() })
-          .from(qrGenerationsTable)
-          .where(eq(qrGenerationsTable.userId, profileId)),
+    const [
+      totalQrGenerated,
+      templatesCount,
+      monthlyGenerated,
+      totalAmountResult,
+    ] = await Promise.all([
+      db
+        .select({ count: count() })
+        .from(qrGenerationsTable)
+        .where(eq(qrGenerationsTable.userId, profileId)),
 
-        db
-          .select({ count: count() })
-          .from(paymentTemplatesTable)
-          .where(
-            and(
-              eq(paymentTemplatesTable.userId, profileId),
-              eq(paymentTemplatesTable.isActive, true)
-            )
-          ),
+      db
+        .select({ count: count() })
+        .from(paymentTemplatesTable)
+        .where(
+          and(
+            eq(paymentTemplatesTable.userId, profileId),
+            eq(paymentTemplatesTable.isActive, true)
+          )
+        ),
 
-        db
-          .select({ count: count() })
-          .from(qrGenerationsTable)
-          .where(
-            and(
-              eq(qrGenerationsTable.userId, profileId),
-              gte(qrGenerationsTable.generatedAt, startOfCurrentMonth)
-            )
-          ),
-      ]);
+      db
+        .select({ count: count() })
+        .from(qrGenerationsTable)
+        .where(
+          and(
+            eq(qrGenerationsTable.userId, profileId),
+            gte(qrGenerationsTable.generatedAt, startOfCurrentMonth)
+          )
+        ),
+
+      // Calculate total amount processed
+      db
+        .select({
+          total: sql<string>`COALESCE(SUM(${qrGenerationsTable.amount}), 0)::text`,
+        })
+        .from(qrGenerationsTable)
+        .where(eq(qrGenerationsTable.userId, profileId)),
+    ]);
+
+    // Get user's subscription to determine usage limit
+    const subscription = await db
+      .select()
+      .from(subscriptionsTable)
+      .where(eq(subscriptionsTable.userId, profileId))
+      .limit(1);
+
+    const plan = subscription[0]?.plan || 'free';
+    const usageLimit = plan === 'free' ? 150 : plan === 'starter' ? 500 : -1; // Professional = unlimited
 
     return {
       qrCodesGenerated: totalQrGenerated[0].count,
       templatesCount: templatesCount[0].count,
       monthlyGenerated: monthlyGenerated[0].count,
       totalTemplates: templatesCount[0].count,
+      totalQrCodes: totalQrGenerated[0].count,
+      monthlyQrCodes: monthlyGenerated[0].count,
+      usageLimit,
+      totalAmount: totalAmountResult[0]?.total ?? '0.00',
     };
   },
   ['user-stats'],
@@ -122,7 +154,18 @@ export async function getUserStats(): Promise<UserStats> {
 
   const profile = await getUserProfile();
   if (!profile) {
-    throw new Error('Profile not found');
+    // Return default stats instead of throwing error
+    // ProfileGuard will handle profile setup
+    return {
+      qrCodesGenerated: 0,
+      templatesCount: 0,
+      monthlyGenerated: 0,
+      totalTemplates: 0,
+      totalQrCodes: 0,
+      monthlyQrCodes: 0,
+      usageLimit: 150, // Default free plan limit
+      totalAmount: '0.00',
+    };
   }
 
   return getCachedUserStats(profile.id);
@@ -137,7 +180,9 @@ export async function getUserTemplates(): Promise<PaymentTemplate[]> {
 
   const profile = await getUserProfile();
   if (!profile) {
-    throw new Error('Profile not found');
+    // Return empty array instead of throwing error
+    // ProfileGuard will handle profile setup
+    return [];
   }
 
   return getCachedUserTemplates(profile.id);
@@ -154,7 +199,9 @@ export async function getQrHistory(
 
   const profile = await getUserProfile();
   if (!profile) {
-    throw new Error('Profile not found');
+    // Return empty array instead of throwing error
+    // ProfileGuard will handle profile setup
+    return [];
   }
 
   // For now, fetch directly without complex caching to avoid type issues

@@ -1,5 +1,6 @@
 'use server';
 
+import { validateSlovakIban } from '@/lib/format-utils';
 import { getBySquareQR } from '@/lib/get-bysquare-qr';
 import QRCode from 'qrcode';
 import { z } from 'zod';
@@ -9,7 +10,10 @@ const bankAccountsSchema = z.object({
     .string()
     .min(1, { message: 'IBAN je povinný' })
     .max(29, { message: 'IBAN je príliš dlhý' })
-    .regex(/^[A-Z]{2}[0-9]{2}[A-Z0-9]*$/, { message: 'Neplatný formát IBAN' }),
+    .regex(/^[A-Z]{2}[0-9]{2}[A-Z0-9]*$/, { message: 'Neplatný formát IBAN' })
+    .refine((iban) => validateSlovakIban(iban), {
+      message: 'Neplatný slovenský IBAN alebo nesprávny kontrolný súčet',
+    }),
 });
 const bySquareSchema = z
   .object({

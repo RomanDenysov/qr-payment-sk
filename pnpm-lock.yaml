@@ -92,6 +92,9 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      ngx-iban-validator:
+        specifier: ^1.2.2
+        version: 1.2.2
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -2040,6 +2043,9 @@ packages:
         optional: true
       sass:
         optional: true
+
+  ngx-iban-validator@1.2.2:
+    resolution: {integrity: sha512-C/GwxFULT2TCuOrfYsS3akf9OUIlW1iLW8x59pLozH6slzNoLkkWoqAsvExtOBt9ieZChgeajZYBxBWkEk7BJw==}
 
   no-case@3.0.4:
     resolution: {integrity: sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==}
@@ -4150,6 +4156,8 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
+
+  ngx-iban-validator@1.2.2: {}
 
   no-case@3.0.4:
     dependencies:
