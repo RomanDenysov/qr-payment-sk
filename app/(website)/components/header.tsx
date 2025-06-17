@@ -22,8 +22,9 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/nextjs';
-import { LogInIcon, LogOutIcon, MenuIcon, UserPlusIcon } from 'lucide-react';
+import { LogInIcon, MenuIcon, UserPlusIcon, XIcon } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 
 const navItems = [
   {
@@ -42,26 +43,33 @@ const navItems = [
 
 export function Header() {
   const scrolled = useScroll(15);
+
   return (
-    <header className={cn('sticky top-0 z-40 mx-auto')}>
+    <header className={cn('sticky top-0 z-50 mx-auto')}>
       <div
         className={cn(
-          'container mx-auto max-w-7xl border-transparent border-b px-4 md:px-6',
+          'container mx-auto max-w-7xl border-transparent border-b px-4 transition-all duration-300 md:px-6',
           scrolled
-            ? 'border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'
+            ? 'border-border bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/80'
             : 'border-transparent bg-background'
         )}
       >
         <div className="flex h-16 items-center justify-between">
           <div className="flex flex-1 items-center justify-start gap-2">
             <MobileMenu />
-            <Logo />
+            <div className="transition-transform duration-200 hover:scale-105">
+              <Logo />
+            </div>
           </div>
-          <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
+
+          <nav className="hidden flex-1 items-center justify-center gap-1 md:flex">
             {navItems.map((item) => (
               <Link
                 key={item.href}
-                className={cn(buttonVariants({ variant: 'ghost' }))}
+                className={cn(
+                  buttonVariants({ variant: 'ghost' }),
+                  'relative overflow-hidden transition-all duration-200 hover:bg-primary/10 hover:text-primary'
+                )}
                 href={item.href}
                 aria-label={item.label}
               >
@@ -69,7 +77,8 @@ export function Header() {
               </Link>
             ))}
           </nav>
-          <div className="flex flex-1 items-center justify-end gap-4">
+
+          <div className="flex flex-1 items-center justify-end gap-3">
             <AuthButtons />
           </div>
         </div>
@@ -82,74 +91,140 @@ function AuthButtons() {
   return (
     <>
       <SignedOut>
-        <SignInButton>
-          <Button variant="outline" size="sm">
-            <LogInIcon className="size-4" />
-            Prihlásiť sa
-          </Button>
-        </SignInButton>
-        <SignUpButton>
-          <Button size="sm">
-            <UserPlusIcon className="size-4" />
-            Registrovať sa
-          </Button>
-        </SignUpButton>
-      </SignedOut>
-      <SignedIn>
         <div className="flex items-center gap-2">
-          <UserButton />
-          <Button variant="outline" size="sm">
-            <LogOutIcon className="size-4" />
-            Odhlásiť sa
+          <SignInButton>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden transition-colors hover:bg-primary/10 hover:text-primary sm:flex"
+            >
+              <LogInIcon className="size-4" />
+              Prihlásiť sa
+            </Button>
+          </SignInButton>
+          <SignUpButton>
+            <Button
+              size="sm"
+              className="bg-gradient-to-r from-primary to-primary/90 transition-all duration-200 hover:from-primary/90 hover:to-primary"
+            >
+              <UserPlusIcon className="size-4" />
+              Registrovať sa
+            </Button>
+          </SignUpButton>
+        </div>
+      </SignedOut>
+
+      <SignedIn>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden transition-colors hover:bg-destructive/10 hover:text-destructive sm:flex"
+            asChild
+          >
+            <Link href="/dashboard">Dashboard</Link>
           </Button>
+
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: '!size-8 !rounded-lg',
+              },
+            }}
+          />
         </div>
       </SignedIn>
+
       <ClerkLoading>
-        <Skeleton className="h-8 w-32 rounded-md" />
-        <Skeleton className="h-8 w-32 rounded-md" />
-        {/* <Skeleton className="size-8 rounded-full" /> */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-24 rounded-md" />
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
       </ClerkLoading>
     </>
   );
 }
 
 function MobileMenu() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Drawer direction="left">
-      <DrawerTrigger className="md:hidden">
+    <Drawer direction="left" open={open} onOpenChange={setOpen}>
+      <DrawerTrigger className="rounded-md p-1 transition-colors hover:bg-primary/10 md:hidden">
         <MenuIcon className="size-6" />
       </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader className="items-center">
-          <DrawerTitle>
-            <LogoSmall />
-          </DrawerTitle>
-          <DrawerDescription className="sr-only">
-            Nástroj na prijímanie platieb cez QR kód.
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="flex h-full flex-1 items-center justify-center p-4">
-          <nav className="w-full">
-            <ul className="flex flex-col gap-2">
+      <DrawerContent className="h-full w-80 max-w-[85vw]">
+        <div className="flex h-full flex-col">
+          <DrawerHeader className="border-border border-b">
+            <div className="flex items-center justify-between">
+              <DrawerTitle className="flex items-center">
+                <LogoSmall />
+              </DrawerTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setOpen(false)}
+                className="h-8 w-8 p-0"
+              >
+                <XIcon className="size-4" />
+              </Button>
+            </div>
+            <DrawerDescription className="text-left text-muted-foreground">
+              Nástroj na prijímanie platieb cez QR kód
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="flex-1 p-6">
+            <nav className="space-y-1">
               {navItems.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      buttonVariants({ variant: 'ghost', size: 'lg' }),
-                      'w-full'
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'lg' }),
+                    'w-full justify-start text-left transition-colors hover:bg-primary/10 hover:text-primary'
+                  )}
+                >
+                  {item.label}
+                </Link>
               ))}
-            </ul>
-          </nav>
+            </nav>
+          </div>
+
+          <DrawerFooter className="border-border border-t p-6">
+            <div className="space-y-3">
+              <SignedOut>
+                <SignInButton>
+                  <Button variant="outline" className="w-full">
+                    <LogInIcon className="size-4" />
+                    Prihlásiť sa
+                  </Button>
+                </SignInButton>
+                <SignUpButton>
+                  <Button className="w-full bg-gradient-to-r from-primary to-primary/90">
+                    <UserPlusIcon className="size-4" />
+                    Registrovať sa
+                  </Button>
+                </SignUpButton>
+              </SignedOut>
+
+              <SignedIn>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/dashboard">Dashboard</Link>
+                </Button>
+                <div className="flex items-center justify-center pt-2">
+                  <UserButton />
+                </div>
+              </SignedIn>
+
+              <ClerkLoading>
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </ClerkLoading>
+            </div>
+          </DrawerFooter>
         </div>
-        <DrawerFooter className="w-full items-center">
-          <AuthButtons />
-        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
