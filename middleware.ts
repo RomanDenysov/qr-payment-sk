@@ -1,7 +1,7 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const publicRoutes = ['/', '/api/qr/generate'];
-const apiRoutes = ['/api/(.*)'];
+const publicRoutes = createRouteMatcher(['/', '/api/v1/qr/generate']);
+const apiRoutes = createRouteMatcher(['/api/(.*)']);
 
 export default clerkMiddleware();
 
