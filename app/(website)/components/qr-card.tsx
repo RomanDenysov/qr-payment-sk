@@ -44,7 +44,7 @@ export function QRCard() {
 
   return (
     <>
-      <Card className="shadow-xl">
+      <Card className="w-full shadow-xl">
         <CardHeader>
           <CardTitle>Vygeneruj QR kód</CardTitle>
           <CardDescription>

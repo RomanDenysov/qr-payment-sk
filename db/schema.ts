@@ -111,6 +111,9 @@ export const subscriptionsTable = createTable(
   ]
 );
 
+// platformStatsTable removed - we now calculate stats dynamically from actual data
+// This approach ensures data consistency and eliminates redundant storage
+
 // Define relationships for Drizzle ORM
 export const profilesRelations = relations(profilesTable, ({ many, one }) => ({
   paymentTemplates: many(paymentTemplatesTable),

@@ -1,16 +1,21 @@
 import { FadeContainer, FadeDiv, FadeSpan } from '@/components/motion/fade';
 import { Badge } from '@/components/ui/badge';
+import type { ReactNode } from 'react';
 import { QRCard } from './qr-card';
 
 export function Hero() {
   return (
-    <section aria-label="hero" className="relative w-full py-20 lg:py-40">
+    <section
+      id="hero"
+      aria-label="Hero"
+      className="relative w-full py-20 lg:py-40"
+    >
       <FadeContainer className="grid grid-cols-1 items-center gap-8 px-4 md:grid-cols-2 md:px-6">
         <div className="flex flex-col items-center gap-4 md:items-start">
           <FadeDiv>
             <Badge variant="outline">
               <span className="mr-1 size-2.5 rounded-full bg-green-400" />
-              My sme online!
+              Sme online!
             </Badge>
           </FadeDiv>
           <div className="flex flex-col gap-4">
@@ -27,10 +32,37 @@ export function Hero() {
             </p>
           </div>
         </div>
-        <FadeDiv className="md:pt-5">
-          <QRCard />
+
+        <FadeDiv className="group size-full md:pt-5">
+          <HeroDecorator>
+            <QRCard />
+          </HeroDecorator>
         </FadeDiv>
       </FadeContainer>
     </section>
   );
 }
+
+const HeroDecorator = ({ children }: { children: ReactNode }) => (
+  <div className="relative mx-auto h-[600px] w-full max-w-4xl duration-200 [--color-border:color-mix(in_oklab,var(--color-zinc-950)8%,transparent)] group-hover:bg-white/5 dark:group-hover:bg-white/5 group-hover:[--color-border:color-mix(in_oklab,var(--color-zinc-950)15%,transparent)] dark:[--color-border:color-mix(in_oklab,var(--color-white)12%,transparent)] dark:group-hover:[--color-border:color-mix(in_oklab,var(--color-white)18%,transparent)]">
+    {/* Grid pattern background */}
+    <div
+      aria-hidden
+      className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:32px_32px]"
+    />
+    {/* Radial gradient overlay to fade edges */}
+    <div
+      aria-hidden
+      className="absolute inset-0 bg-radial from-transparent via-transparent to-70% to-background"
+    />
+    {/* Subtle highlight in center */}
+    <div
+      aria-hidden
+      className="absolute inset-0 bg-radial from-white/5 via-transparent to-40% to-transparent dark:from-white/3"
+    />
+    {/* Content container - centered card */}
+    <div className="absolute inset-0 flex items-center justify-center p-12">
+      {children}
+    </div>
+  </div>
+);
