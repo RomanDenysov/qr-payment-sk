@@ -32,3 +32,10 @@ export async function invalidateStatsFromServer() {
     console.error('Failed to invalidate stats cache from server:', error);
   }
 }
+
+// Re-export formatting utilities for convenience
+export {
+  formatNumber,
+  formatCurrency,
+  formatLargeNumber,
+} from '@/lib/format-utils';

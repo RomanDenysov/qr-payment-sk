@@ -1,9 +1,6 @@
-import {
-  formatCurrency,
-  formatLargeNumber,
-  getPlatformStats,
-} from '@/app/actions/stats';
+import { getPlatformStats } from '@/app/actions/stats';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
+import { formatCurrency, formatLargeNumber } from '@/lib/format-utils';
 import type { ReactNode } from 'react';
 
 const getStatItems = (stats: {
@@ -14,22 +11,22 @@ const getStatItems = (stats: {
 }) => [
   {
     title: 'Aktívni používatelia',
-    value: formatLargeNumber(stats.totalUsers),
+    value: formatLargeNumber(stats.totalUsers ?? 0),
     subtitle: 'registrovaných',
   },
   {
     title: 'Vytvorené QR kódy',
-    value: formatLargeNumber(stats.totalQrCodes),
+    value: formatLargeNumber(stats.totalQrCodes ?? 0),
     subtitle: 'celkovo',
   },
   {
     title: 'Platobné šablóny',
-    value: formatLargeNumber(stats.totalTemplates),
+    value: formatLargeNumber(stats.totalTemplates ?? 0),
     subtitle: 'vytvorených',
   },
   {
     title: 'Celkový obrat',
-    value: formatCurrency(stats.totalRevenue),
+    value: formatCurrency(stats.totalRevenue ?? '0'),
     subtitle: 'spracovaný',
   },
 ];
