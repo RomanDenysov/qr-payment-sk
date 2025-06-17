@@ -26,19 +26,20 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           </blockquote>
         </div> */}
       </div>
-      <div className="lg:p-8">
-        <AuthDecorator>
-          <div className="mx-auto flex w-full max-w-[400px] flex-col justify-center space-y-6">
-            {children}
-          </div>
-        </AuthDecorator>
+
+      {/* <AuthDecorator> */}
+      <div className="p-4 lg:p-8">
+        <div className="mx-auto flex w-full max-w-[400px] flex-col justify-center space-y-6">
+          {children}
+        </div>
       </div>
+      {/* </AuthDecorator> */}
     </main>
   );
 }
 
 const AuthDecorator = ({ children }: { children: ReactNode }) => (
-  <div className="relative mx-auto h-[600px] w-full max-w-[500px] duration-200 [--color-border:color-mix(in_oklab,var(--color-zinc-950)8%,transparent)] group-hover:bg-white/5 dark:group-hover:bg-white/5 group-hover:[--color-border:color-mix(in_oklab,var(--color-zinc-950)15%,transparent)] dark:[--color-border:color-mix(in_oklab,var(--color-white)12%,transparent)] dark:group-hover:[--color-border:color-mix(in_oklab,var(--color-white)18%,transparent)]">
+  <div className="relative mx-auto h-screen w-full duration-200 [--color-border:color-mix(in_oklab,var(--color-zinc-950)8%,transparent)] group-hover:bg-white/5 md:h-[400px] dark:group-hover:bg-white/5 group-hover:[--color-border:color-mix(in_oklab,var(--color-zinc-950)15%,transparent)] dark:[--color-border:color-mix(in_oklab,var(--color-white)12%,transparent)] dark:group-hover:[--color-border:color-mix(in_oklab,var(--color-white)18%,transparent)]">
     {/* Grid pattern background */}
     <div
       aria-hidden
@@ -54,7 +55,8 @@ const AuthDecorator = ({ children }: { children: ReactNode }) => (
       aria-hidden
       className="absolute inset-0 bg-radial from-white/5 via-transparent to-40% to-transparent dark:from-white/3"
     />
-    {/* Content container - centered card */}
-    <div className="absolute inset-0">{children}</div>
+    <div className="absolute inset-0 flex items-center justify-center">
+      {children}
+    </div>
   </div>
 );
