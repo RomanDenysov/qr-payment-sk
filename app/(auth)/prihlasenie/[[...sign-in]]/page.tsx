@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 
-const title = 'Welcome back';
-const description = 'Enter your details to sign in.';
+const title = 'Vitajte späť';
+const description = 'Zadajte svoje údaje na prihlásenie.';
 const SignIn = dynamic(() => import('@clerk/nextjs').then((mod) => mod.SignIn));
 
 export default function Page() {

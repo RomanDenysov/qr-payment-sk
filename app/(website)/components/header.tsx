@@ -22,7 +22,7 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/nextjs';
-import { LogInIcon, MenuIcon, UserPlusIcon, XIcon } from 'lucide-react';
+import { LogInIcon, MenuIcon, UserPlusIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -57,6 +57,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex flex-1 items-center justify-start gap-2">
             <MobileMenu />
+
             <div className="transition-transform duration-200 hover:scale-105">
               <Logo />
             </div>
@@ -105,7 +106,7 @@ function AuthButtons() {
           <SignUpButton>
             <Button
               size="sm"
-              className="bg-gradient-to-r from-primary to-primary/90 transition-all duration-200 hover:from-primary/90 hover:to-primary"
+              className="bg-gradient-to-r from-primary to-primary/75 transition-all duration-200 hover:from-primary/90 hover:to-primary"
             >
               <UserPlusIcon className="size-4" />
               Registrovať sa
@@ -155,35 +156,26 @@ function MobileMenu() {
       </DrawerTrigger>
       <DrawerContent className="h-full w-80 max-w-[85vw]">
         <div className="flex h-full flex-col">
-          <DrawerHeader className="border-border border-b">
-            <div className="flex items-center justify-between">
-              <DrawerTitle className="flex items-center">
-                <LogoSmall />
-              </DrawerTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setOpen(false)}
-                className="h-8 w-8 p-0"
-              >
-                <XIcon className="size-4" />
-              </Button>
-            </div>
-            <DrawerDescription className="text-left text-muted-foreground">
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center justify-center">
+              <LogoSmall />
+            </DrawerTitle>
+
+            <DrawerDescription className="sr-only">
               Nástroj na prijímanie platieb cez QR kód
             </DrawerDescription>
           </DrawerHeader>
 
-          <div className="flex-1 p-6">
-            <nav className="space-y-1">
+          <div className="mx-auto w-full flex-1 p-6">
+            <nav className="flex w-full flex-col gap-3">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    buttonVariants({ variant: 'ghost', size: 'lg' }),
-                    'w-full justify-start text-left transition-colors hover:bg-primary/10 hover:text-primary'
+                    buttonVariants({ variant: 'outline', size: 'sm' }),
+                    'w-full'
                   )}
                 >
                   {item.label}
@@ -192,7 +184,7 @@ function MobileMenu() {
             </nav>
           </div>
 
-          <DrawerFooter className="border-border border-t p-6">
+          <DrawerFooter>
             <div className="space-y-3">
               <SignedOut>
                 <SignInButton>
@@ -202,7 +194,7 @@ function MobileMenu() {
                   </Button>
                 </SignInButton>
                 <SignUpButton>
-                  <Button className="w-full bg-gradient-to-r from-primary to-primary/90">
+                  <Button className="w-full bg-gradient-to-r from-primary to-primary/75">
                     <UserPlusIcon className="size-4" />
                     Registrovať sa
                   </Button>

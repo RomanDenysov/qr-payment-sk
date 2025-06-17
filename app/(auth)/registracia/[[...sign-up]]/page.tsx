@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 
-const title = 'Create an account';
-const description = 'Enter your details to get started.';
+const title = 'Vytvorte si účet';
+const description = 'Zadajte svoje údaje a začnite používať našu službu.';
 const SignUp = dynamic(() => import('@clerk/nextjs').then((mod) => mod.SignUp));
 
 export default function SignUpPage() {

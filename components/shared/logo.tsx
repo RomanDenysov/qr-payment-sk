@@ -24,6 +24,9 @@ export function LogoSmall() {
         <div className="flex size-6 items-center justify-center rounded-md bg-primary">
           <span className="font-bold text-secondary text-xs">QR</span>
         </div>
+        <span className="font-black text-primary text-sm tracking-normal">
+          Platby
+        </span>
       </div>
     </Link>
   );
