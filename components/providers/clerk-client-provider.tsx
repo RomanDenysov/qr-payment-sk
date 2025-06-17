@@ -17,24 +17,30 @@ export function ClerkClientProvider({ children }: ClerkClientProviderProps) {
   const baseTheme = isDark ? dark : undefined;
 
   const variables: Theme['variables'] = {
-    fontFamily: 'var(--font-sans)',
-    fontFamilyButtons: 'var(--font-sans)',
+    fontFamily: '!var(--font-sans)',
+    fontFamilyButtons: '!var(--font-sans)',
     fontWeight: {
-      bold: 'var(--font-weight-bold)',
-      normal: 'var(--font-weight-normal)',
-      medium: 'var(--font-weight-medium)',
+      bold: '!var(--font-weight-bold)',
+      normal: '!var(--font-weight-normal)',
+      medium: '!var(--font-weight-medium)',
     },
   };
 
   const elements: Theme['elements'] = {
-    dividerLine: 'bg-border',
-    socialButtonsIconButton: 'bg-card',
-    navbarButton: 'text-foreground',
-    organizationSwitcherTrigger__open: 'bg-background',
-    organizationPreviewMainIdentifier: 'text-foreground',
-    organizationSwitcherTriggerIcon: 'text-muted-foreground',
-    organizationPreview__organizationSwitcherTrigger: 'gap-2',
-    organizationPreviewAvatarContainer: 'shrink-0',
+    dividerLine: '!bg-border',
+    socialButtonsIconButton: '!bg-card',
+    navbarButton: '!text-foreground',
+    organizationSwitcherTrigger__open: '!bg-background',
+    organizationPreviewMainIdentifier: '!text-foreground',
+    organizationSwitcherTriggerIcon: '!text-muted-foreground',
+    organizationPreview__organizationSwitcherTrigger: '!gap-2',
+    organizationPreviewAvatarContainer: '!shrink-0',
+  };
+
+  const layout: Theme['layout'] = {
+    privacyPageUrl: '/pravne/ochrana-sukromia',
+    termsPageUrl: '/pravne/obchodne-podmienky',
+    // helpPageUrl: '/pravne/zasady-cookies',
   };
 
   return (
@@ -43,6 +49,7 @@ export function ClerkClientProvider({ children }: ClerkClientProviderProps) {
         baseTheme,
         elements,
         variables,
+        layout,
       }}
       localization={skSK}
     >
