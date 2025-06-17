@@ -22,7 +22,7 @@ export const profilesTable = createTable(
     clerkId: varchar('clerk_id', { length: 100 }).unique().notNull(),
     email: varchar('email', { length: 255 }).unique().notNull(),
     businessName: varchar('business_name', { length: 200 }),
-    defaultIban: varchar('default_iban', { length: 34 }),
+    defaultIban: varchar('default_iban', { length: 34 }), // Optional default Slovak IBAN
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
@@ -87,38 +87,10 @@ export const qrGenerationsTable = createTable(
   ]
 );
 
-// Subscriptions for billing management
-export const subscriptionsTable = createTable(
-  'subscriptions',
-  {
-    id: uuid().primaryKey().defaultRandom(),
-    userId: uuid('user_id')
-      .references(() => profilesTable.id, { onDelete: 'cascade' })
-      .notNull(),
-    plan: varchar('plan', { length: 20 }).notNull(), // free, pro, business
-    status: varchar('status', { length: 20 }).notNull(), // active, canceled, past_due
-    currentPeriodStart: timestamp('current_period_start'),
-    currentPeriodEnd: timestamp('current_period_end'),
-    cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false),
-    externalId: varchar('external_id', { length: 100 }), // Polar.sh subscription ID
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  },
-  (table) => [
-    index('idx_subscriptions_user_id').on(table.userId),
-    index('idx_subscriptions_status').on(table.status),
-    index('idx_subscriptions_external_id').on(table.externalId),
-  ]
-);
-
-// platformStatsTable removed - we now calculate stats dynamically from actual data
-// This approach ensures data consistency and eliminates redundant storage
-
 // Define relationships for Drizzle ORM
-export const profilesRelations = relations(profilesTable, ({ many, one }) => ({
+export const profilesRelations = relations(profilesTable, ({ many }) => ({
   paymentTemplates: many(paymentTemplatesTable),
   qrGenerations: many(qrGenerationsTable),
-  subscription: one(subscriptionsTable),
 }));
 
 export const paymentTemplatesRelations = relations(
@@ -146,16 +118,6 @@ export const qrGenerationsRelations = relations(
   })
 );
 
-export const subscriptionsRelations = relations(
-  subscriptionsTable,
-  ({ one }) => ({
-    profile: one(profilesTable, {
-      fields: [subscriptionsTable.userId],
-      references: [profilesTable.id],
-    }),
-  })
-);
-
 // Type exports for use throughout the application
 export type Profile = typeof profilesTable.$inferSelect;
 export type NewProfile = typeof profilesTable.$inferInsert;
@@ -165,6 +127,3 @@ export type NewPaymentTemplate = typeof paymentTemplatesTable.$inferInsert;
 
 export type QrGeneration = typeof qrGenerationsTable.$inferSelect;
 export type NewQrGeneration = typeof qrGenerationsTable.$inferInsert;
-
-export type Subscription = typeof subscriptionsTable.$inferSelect;
-export type NewSubscription = typeof subscriptionsTable.$inferInsert;

@@ -1,45 +1,15 @@
-'use server';
+import 'server-only';
 
 import db from '@/db';
-import {
-  profilesTable,
-  qrGenerationsTable,
-  subscriptionsTable,
-} from '@/db/schema';
+import { profilesTable, qrGenerationsTable } from '@/db/schema';
+import { auth } from '@clerk/nextjs/server';
 import { and, count, eq, gte } from 'drizzle-orm';
-
-// Rate limits configuration
-export const RATE_LIMITS = {
-  anonymous: { limit: 10, window: '7d' }, // 10 QR codes per week
-  free: { limit: 150, window: '30d' }, // 150 QR codes per month
-  starter: { limit: 500, window: '30d' }, // 500 QR codes per month
-  professional: { limit: -1, window: '30d' }, // Unlimited
-} as const;
-
-export type PlanType = keyof typeof RATE_LIMITS;
-
-// Usage status interface
-export interface UsageStatus {
-  allowed: boolean;
-  used: number;
-  remaining: number;
-  limit: number;
-  plan: PlanType;
-  resetDate: Date;
-}
-
-// Error for rate limiting
-export class RateLimitError extends Error {
-  code: string;
-  statusCode: number;
-
-  constructor(message: string, code: string, statusCode = 429) {
-    super(message);
-    this.name = 'RateLimitError';
-    this.code = code;
-    this.statusCode = statusCode;
-  }
-}
+import { ProfileNotFoundError, RateLimitError } from './errors';
+import {
+  type PlanType,
+  RATE_LIMITS,
+  type UsageStatus,
+} from './rate-limiting-constants';
 
 // Get start of period based on window
 function getStartOfPeriod(window: string): Date {
@@ -75,10 +45,12 @@ function getResetDate(window: string): Date {
   }
 }
 
-// Check usage for authenticated users
+// Check usage for authenticated users using Clerk's native billing
 export async function checkUserUsageLimit(
   userId: string
 ): Promise<UsageStatus> {
+  const { has } = await auth();
+
   // Get user profile
   const profile = await db
     .select()
@@ -87,39 +59,19 @@ export async function checkUserUsageLimit(
     .limit(1);
 
   if (!profile.length) {
-    throw new RateLimitError(
-      'User profile not found',
-      'PROFILE_NOT_FOUND',
-      404
-    );
+    throw new ProfileNotFoundError();
   }
 
-  // Get user subscription
-  const subscription = await db
-    .select()
-    .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.userId, profile[0].id))
-    .limit(1);
+  // Determine plan using Clerk's native billing
+  let plan: PlanType = 'free'; // Default to free
 
-  const plan: PlanType = (subscription[0]?.plan as PlanType) || 'free';
+  if (has({ plan: 'professional' })) {
+    plan = 'professional';
+  } else if (has({ plan: 'starter' })) {
+    plan = 'starter';
+  }
+
   const planConfig = RATE_LIMITS[plan];
-
-  // Check subscription status
-  if (subscription[0]?.status === 'past_due') {
-    throw new RateLimitError(
-      'Payment required to continue using the service',
-      'PAYMENT_REQUIRED',
-      402
-    );
-  }
-
-  if (subscription[0]?.status === 'canceled') {
-    throw new RateLimitError(
-      'Subscription canceled',
-      'SUBSCRIPTION_CANCELED',
-      403
-    );
-  }
 
   // Calculate period boundaries
   const periodStart = getStartOfPeriod(planConfig.window);
@@ -143,8 +95,7 @@ export async function checkUserUsageLimit(
   if (limit !== -1 && used >= limit) {
     throw new RateLimitError(
       `${plan} plan limit exceeded. ${used}/${limit} QR codes used this period.`,
-      'RATE_LIMIT_EXCEEDED',
-      429
+      { used, limit, plan, resetDate }
     );
   }
 
@@ -189,36 +140,28 @@ export async function checkAnonymousUsageLimit(
   };
 }
 
-// Get user subscription details
-export async function getUserSubscription(userId: string): Promise<{
+// Get user plan details using Clerk's native billing
+export async function getUserPlan(userId: string): Promise<{
   plan: PlanType;
-  status: string;
-  subscription: typeof subscriptionsTable.$inferSelect | null;
+  hasApiAccess: boolean;
+  hasWebhooks: boolean;
+  hasWhiteLabel: boolean;
 }> {
-  const profile = await db
-    .select()
-    .from(profilesTable)
-    .where(eq(profilesTable.clerkId, userId))
-    .limit(1);
+  const { has } = await auth();
 
-  if (!profile.length) {
-    return {
-      plan: 'free',
-      status: 'active',
-      subscription: null,
-    };
+  let plan: PlanType = 'free';
+
+  if (has({ plan: 'professional' })) {
+    plan = 'professional';
+  } else if (has({ plan: 'starter' })) {
+    plan = 'starter';
   }
 
-  const subscription = await db
-    .select()
-    .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.userId, profile[0].id))
-    .limit(1);
-
   return {
-    plan: (subscription[0]?.plan as PlanType) || 'free',
-    status: subscription[0]?.status || 'active',
-    subscription: subscription[0] || null,
+    plan,
+    hasApiAccess: has({ feature: 'api_access' }),
+    hasWebhooks: has({ feature: 'webhooks' }),
+    hasWhiteLabel: has({ feature: 'white_label' }),
   };
 }
 
@@ -256,35 +199,33 @@ export async function getUserUsageStats(userId: string): Promise<{
   };
 }
 
-// Check if user has access to specific features
+// Check if user has access to specific features based on Clerk billing
 export async function checkFeatureAccess(
   userId: string,
   feature: string
 ): Promise<boolean> {
-  const { plan } = await getUserSubscription(userId);
+  // TODO: Implement Clerk billing integration to check user's plan
+  // For now, return basic feature access for all registered users
 
-  const featureAccess = {
-    api_access: ['starter', 'professional'],
-    templates: ['free', 'starter', 'professional'],
-    history: ['free', 'starter', 'professional'],
-    webhooks: ['professional'],
-    customization: ['professional'],
-    white_label: ['professional'],
-    priority_support: ['starter', 'professional'],
-  };
+  const basicFeatures = ['basic_qr', 'templates', 'history'];
 
-  const allowedPlans = featureAccess[feature as keyof typeof featureAccess];
-  return allowedPlans ? allowedPlans.includes(plan) : false;
+  // All registered users get basic features
+  if (basicFeatures.includes(feature)) {
+    return true;
+  }
+
+  // Advanced features require plan upgrade (will be implemented with Clerk billing)
+  return false;
 }
 
-// Increment usage counter (for caching/analytics)
+// Increment usage counter (for analytics)
 export async function incrementUsageCounter(
   userId: string,
   qrGenerationId: string
 ): Promise<void> {
-  // This could be used for real-time analytics
-  // or caching purposes in the future
-  console.log(`Usage incremented for user ${userId}, QR: ${qrGenerationId}`);
+  // This could be used for detailed analytics
+  // For now, QR generations are already tracked in qrGenerationsTable
+  console.log(`Usage incremented for user ${userId}, QR ${qrGenerationId}`);
 }
 
 // Get platform-wide usage statistics
@@ -303,29 +244,14 @@ export async function getPlatformUsageStats(): Promise<{
       .where(gte(qrGenerationsTable.generatedAt, getStartOfPeriod('30d'))),
   ]);
 
-  // Get plan distribution
-  const subscriptions = await db
-    .select()
-    .from(subscriptionsTable)
-    .where(eq(subscriptionsTable.status, 'active'));
-
+  // Plan distribution would need to be calculated from Clerk's billing data
+  // For now, return placeholder data
   const planDistribution: Record<PlanType, number> = {
     anonymous: 0,
-    free: 0,
+    free: totalUsers[0].count, // Assume all users are free for now
     starter: 0,
     professional: 0,
   };
-
-  for (const sub of subscriptions) {
-    const plan = sub.plan as PlanType;
-    if (plan in planDistribution) {
-      planDistribution[plan]++;
-    }
-  }
-
-  // Count free users (users without active subscriptions)
-  const freeUsers = totalUsers[0].count - subscriptions.length;
-  planDistribution.free = freeUsers;
 
   return {
     totalUsers: totalUsers[0].count,

@@ -66,7 +66,7 @@ const plans = [
       'Prioritná podpora',
       'White-label riešenie',
       'Prispôsobenie QR dizajnu',
-      'Dedikovaný účet manažér',
+      // 'Dedikovaný účet manažér',
     ],
     notIncluded: [],
     popular: false,

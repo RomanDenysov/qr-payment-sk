@@ -1,8 +1,9 @@
 'use client';
 
-import { generateQRCode } from '@/app/actions/qr-codes';
+import { generateQRCodeAnonymous } from '@/app/actions/qr-codes';
 import { IBANInput } from '@/components/shared/iban-input';
 import { ShowQrDrawer } from '@/components/show-qr-drawer';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -15,24 +16,24 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2Icon, QrCodeIcon } from 'lucide-react';
-import { type KeyboardEvent, useActionState, useRef } from 'react';
-
-const initialState = {
-  success: false,
-  error: null,
-  qrCode: null,
-  inputs: null,
-};
+import { AlertCircle, Loader2Icon, QrCodeIcon } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 
 export function QRCard() {
-  const [state, formAction, pending] = useActionState(
-    generateQRCode,
-    initialState
-  );
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+
+  const { execute, result, isExecuting } = useAction(generateQRCodeAnonymous);
 
   const ibanRef = useRef<HTMLInputElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
+
+  // Handle successful QR generation
+  useEffect(() => {
+    if (result?.data?.data?.qrCodeUrl) {
+      setQrCodeUrl(result.data.data.qrCodeUrl);
+    }
+  }, [result]);
 
   // Handle Enter key in IBAN field to move to amount field
   const handleIbanKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -40,6 +41,17 @@ export function QRCard() {
       e.preventDefault();
       amountRef.current?.focus();
     }
+  };
+
+  const handleSubmit = async (formData: FormData) => {
+    const data = {
+      iban: formData.get('iban') as string,
+      amount: Number.parseFloat(formData.get('amount') as string),
+      variableSymbol: (formData.get('variableSymbol') as string) || undefined,
+      paymentNote: (formData.get('paymentNote') as string) || undefined,
+    };
+
+    execute(data);
   };
 
   return (
@@ -61,9 +73,18 @@ export function QRCard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4 ">
+          <div className="space-y-4">
+            {result?.serverError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {result.serverError.message}
+                </AlertDescription>
+              </Alert>
+            )}
+
             <form
-              action={formAction}
+              action={handleSubmit}
               id="generate-qr-form"
               name="generate-qr-form"
               className="space-y-4"
@@ -73,20 +94,19 @@ export function QRCard() {
                 <Label htmlFor="iban">IBAN*</Label>
                 <IBANInput
                   ref={ibanRef}
-                  disabled={pending}
+                  disabled={isExecuting}
                   id="iban"
                   name="iban"
                   maxLength={29}
                   placeholder="SK31 1200 0000 1987 4263 7541"
                   aria-describedby="iban-error"
                   autoCapitalize="characters"
-                  defaultValue={state.inputs?.iban}
                   onKeyDown={handleIbanKeyDown}
                   required
                 />
-                {state.error?.iban && (
+                {result?.validationErrors?.iban?._errors?.[0] && (
                   <p id="iban-error" className="text-destructive text-sm">
-                    {state.error.iban[0]}
+                    {result.validationErrors.iban._errors[0]}
                   </p>
                 )}
               </div>
@@ -95,7 +115,7 @@ export function QRCard() {
                   <Label htmlFor="amount">Suma*</Label>
                   <Input
                     ref={amountRef}
-                    disabled={pending}
+                    disabled={isExecuting}
                     id="amount"
                     name="amount"
                     type="number"
@@ -104,33 +124,31 @@ export function QRCard() {
                     max="1000000"
                     required
                     placeholder="100.00"
-                    defaultValue={state.inputs?.amount}
                     aria-describedby="amount-error"
                   />
-                  {state.error?.amount && (
+                  {result?.validationErrors?.amount?._errors?.[0] && (
                     <p id="amount-error" className="text-destructive text-sm">
-                      {state.error.amount[0]}
+                      {result.validationErrors.amount._errors[0]}
                     </p>
                   )}
                 </div>
                 <div className="flex-2 space-y-2">
                   <Label htmlFor="variableSymbol">Variabilný symbol</Label>
                   <Input
-                    disabled={pending}
+                    disabled={isExecuting}
                     id="variableSymbol"
                     name="variableSymbol"
                     placeholder="0100004050"
                     type="text"
-                    defaultValue={state.inputs?.variableSymbol}
                     aria-describedby="variableSymbol-error"
                     maxLength={24}
                   />
-                  {state.error?.variableSymbol && (
+                  {result?.validationErrors?.variableSymbol?._errors?.[0] && (
                     <p
                       id="variableSymbol-error"
                       className="text-destructive text-sm"
                     >
-                      {state.error.variableSymbol[0]}
+                      {result.validationErrors.variableSymbol._errors[0]}
                     </p>
                   )}
                 </div>
@@ -138,20 +156,19 @@ export function QRCard() {
               <div className="space-y-2">
                 <Label htmlFor="paymentNote">Poznámka k platbe</Label>
                 <Textarea
-                  disabled={pending}
+                  disabled={isExecuting}
                   id="paymentNote"
                   name="paymentNote"
                   placeholder="Nazov služby, čislo, kód..."
-                  defaultValue={state.inputs?.paymentNote}
                   aria-describedby="paymentNote-error"
                   maxLength={250}
                 />
-                {state.error?.paymentNote && (
+                {result?.validationErrors?.paymentNote?._errors?.[0] && (
                   <p
                     id="paymentNote-error"
                     className="text-destructive text-sm"
                   >
-                    {state.error.paymentNote[0]}
+                    {result.validationErrors.paymentNote._errors[0]}
                   </p>
                 )}
               </div>
@@ -163,9 +180,9 @@ export function QRCard() {
             type="submit"
             form="generate-qr-form"
             className="w-full"
-            disabled={pending}
+            disabled={isExecuting}
           >
-            {pending ? (
+            {isExecuting ? (
               <>
                 <Loader2Icon className="animate-spin" />
                 Generujem QR kód...
@@ -180,9 +197,7 @@ export function QRCard() {
         </CardFooter>
       </Card>
 
-      {state.success && state.qrCode && (
-        <ShowQrDrawer qrCodeUrl={state.qrCode} />
-      )}
+      {qrCodeUrl && <ShowQrDrawer qrCodeUrl={qrCodeUrl} />}
     </>
   );
 }

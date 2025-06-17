@@ -5,270 +5,234 @@ import {
   paymentTemplatesTable,
   profilesTable,
   qrGenerationsTable,
-  subscriptionsTable,
 } from '@/db/schema';
-import { unstable_cache } from '@/lib/unstable-cache';
 import { auth } from '@clerk/nextjs/server';
-import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, lt } from 'drizzle-orm';
 
-// Helper function to get start of current month
-function getStartOfCurrentMonth(): Date {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1);
-}
-
-// Types for dashboard data
-export interface UserStats {
-  qrCodesGenerated: number;
-  templatesCount: number;
-  monthlyGenerated: number;
-  totalTemplates: number;
-  // Added fields for StatsCards compatibility
-  totalQrCodes: number; // Same as qrCodesGenerated
-  monthlyQrCodes: number; // Same as monthlyGenerated
-  usageLimit: number; // User's plan limit (-1 for unlimited)
-  totalAmount: string; // Total EUR amount processed
-}
-
-export interface QrGenerationHistory {
-  id: string;
-  amount: string;
-  iban: string;
-  description: string | null;
-  templateName: string | null;
-  generatedAt: Date;
-  variableSymbol: bigint;
-  qrData: string;
-  status: string;
-}
-
-export interface PaymentTemplate {
-  id: string;
-  name: string;
-  iban: string;
-  amount: string;
-  description: string | null;
-  color: string | null;
-  icon: string | null;
-  usageCount: number;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Pure cached functions that only depend on parameters
-const getCachedUserStats = unstable_cache(
-  async (profileId: string): Promise<UserStats> => {
-    const startOfCurrentMonth = getStartOfCurrentMonth();
-
-    const [
-      totalQrGenerated,
-      templatesCount,
-      monthlyGenerated,
-      totalAmountResult,
-    ] = await Promise.all([
-      db
-        .select({ count: count() })
-        .from(qrGenerationsTable)
-        .where(eq(qrGenerationsTable.userId, profileId)),
-
-      db
-        .select({ count: count() })
-        .from(paymentTemplatesTable)
-        .where(
-          and(
-            eq(paymentTemplatesTable.userId, profileId),
-            eq(paymentTemplatesTable.isActive, true)
-          )
-        ),
-
-      db
-        .select({ count: count() })
-        .from(qrGenerationsTable)
-        .where(
-          and(
-            eq(qrGenerationsTable.userId, profileId),
-            gte(qrGenerationsTable.generatedAt, startOfCurrentMonth)
-          )
-        ),
-
-      // Calculate total amount processed
-      db
-        .select({
-          total: sql<string>`COALESCE(SUM(${qrGenerationsTable.amount}), 0)::text`,
-        })
-        .from(qrGenerationsTable)
-        .where(eq(qrGenerationsTable.userId, profileId)),
-    ]);
-
-    // Get user's subscription to determine usage limit
-    const subscription = await db
-      .select()
-      .from(subscriptionsTable)
-      .where(eq(subscriptionsTable.userId, profileId))
-      .limit(1);
-
-    const plan = subscription[0]?.plan || 'free';
-    const usageLimit = plan === 'free' ? 150 : plan === 'starter' ? 500 : -1; // Professional = unlimited
-
-    return {
-      qrCodesGenerated: totalQrGenerated[0].count,
-      templatesCount: templatesCount[0].count,
-      monthlyGenerated: monthlyGenerated[0].count,
-      totalTemplates: templatesCount[0].count,
-      totalQrCodes: totalQrGenerated[0].count,
-      monthlyQrCodes: monthlyGenerated[0].count,
-      usageLimit,
-      totalAmount: totalAmountResult[0]?.total ?? '0.00',
-    };
-  },
-  ['user-stats'],
-  { revalidate: 300 }
-);
-
-const getCachedUserTemplates = unstable_cache(
-  async (profileId: string): Promise<PaymentTemplate[]> => {
-    return await db
-      .select()
-      .from(paymentTemplatesTable)
-      .where(
-        and(
-          eq(paymentTemplatesTable.userId, profileId),
-          eq(paymentTemplatesTable.isActive, true)
-        )
-      )
-      .orderBy(desc(paymentTemplatesTable.usageCount))
-      .limit(10);
-  },
-  ['user-templates'],
-  { revalidate: 300 }
-);
-
-// Public functions that handle auth and call cached functions
-export async function getUserStats(): Promise<UserStats> {
+// Get dashboard statistics
+export async function getDashboardStats() {
   const { userId } = await auth();
 
   if (!userId) {
     throw new Error('Unauthorized');
   }
 
-  const profile = await getUserProfile();
-  if (!profile) {
-    // Return default stats instead of throwing error
-    // ProfileGuard will handle profile setup
-    return {
-      qrCodesGenerated: 0,
-      templatesCount: 0,
-      monthlyGenerated: 0,
-      totalTemplates: 0,
-      totalQrCodes: 0,
-      monthlyQrCodes: 0,
-      usageLimit: 150, // Default free plan limit
-      totalAmount: '0.00',
-    };
-  }
-
-  return getCachedUserStats(profile.id);
-}
-
-export async function getUserTemplates(): Promise<PaymentTemplate[]> {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error('Unauthorized');
-  }
-
-  const profile = await getUserProfile();
-  if (!profile) {
-    // Return empty array instead of throwing error
-    // ProfileGuard will handle profile setup
-    return [];
-  }
-
-  return getCachedUserTemplates(profile.id);
-}
-
-export async function getQrHistory(
-  limit?: number
-): Promise<QrGenerationHistory[]> {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error('Unauthorized');
-  }
-
-  const profile = await getUserProfile();
-  if (!profile) {
-    // Return empty array instead of throwing error
-    // ProfileGuard will handle profile setup
-    return [];
-  }
-
-  // For now, fetch directly without complex caching to avoid type issues
-  return await db
-    .select()
-    .from(qrGenerationsTable)
-    .where(eq(qrGenerationsTable.userId, profile.id))
-    .orderBy(desc(qrGenerationsTable.generatedAt))
-    .limit(limit || 20);
-}
-
-export async function getUserProfile() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error('Unauthorized');
-  }
-
+  // Get user profile
   const profile = await db
     .select()
     .from(profilesTable)
     .where(eq(profilesTable.clerkId, userId))
     .limit(1);
 
-  return profile[0] || null;
+  if (!profile.length) {
+    throw new Error('Profile not found');
+  }
+
+  const profileId = profile[0].id;
+
+  // Calculate date ranges
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+  // Get current month stats
+  const [currentMonthQRs] = await db
+    .select({ count: count() })
+    .from(qrGenerationsTable)
+    .where(
+      and(
+        eq(qrGenerationsTable.userId, profileId),
+        gte(qrGenerationsTable.generatedAt, startOfMonth)
+      )
+    );
+
+  // Get last month stats for comparison
+  const [lastMonthQRs] = await db
+    .select({ count: count() })
+    .from(qrGenerationsTable)
+    .where(
+      and(
+        eq(qrGenerationsTable.userId, profileId),
+        gte(qrGenerationsTable.generatedAt, startOfLastMonth),
+        lt(qrGenerationsTable.generatedAt, endOfLastMonth)
+      )
+    );
+
+  // Get total QR generations
+  const [totalQRs] = await db
+    .select({ count: count() })
+    .from(qrGenerationsTable)
+    .where(eq(qrGenerationsTable.userId, profileId));
+
+  // Get active templates count
+  const [activeTemplates] = await db
+    .select({ count: count() })
+    .from(paymentTemplatesTable)
+    .where(
+      and(
+        eq(paymentTemplatesTable.userId, profileId),
+        eq(paymentTemplatesTable.isActive, true)
+      )
+    );
+
+  // Calculate growth percentage
+  const growthPercentage =
+    lastMonthQRs.count > 0
+      ? ((currentMonthQRs.count - lastMonthQRs.count) / lastMonthQRs.count) *
+        100
+      : currentMonthQRs.count > 0
+        ? 100
+        : 0;
+
+  return {
+    currentMonthQRs: currentMonthQRs.count,
+    totalQRs: totalQRs.count,
+    activeTemplates: activeTemplates.count,
+    growthPercentage: Math.round(growthPercentage * 100) / 100,
+  };
 }
 
-export async function checkUsageLimit(): Promise<{
-  allowed: boolean;
-  remaining: number;
-}> {
+// Get recent QR generations
+export async function getRecentQRGenerations(limit = 10) {
   const { userId } = await auth();
 
   if (!userId) {
     throw new Error('Unauthorized');
   }
 
-  const profile = await getUserProfile();
+  // Get user profile
+  const profile = await db
+    .select()
+    .from(profilesTable)
+    .where(eq(profilesTable.clerkId, userId))
+    .limit(1);
 
-  if (!profile) {
-    // No profile means user hasn't completed setup, return anonymous limits
-    return { allowed: false, remaining: 0 };
+  if (!profile.length) {
+    throw new Error('Profile not found');
   }
 
-  const startOfCurrentMonth = getStartOfCurrentMonth();
+  const recentQRs = await db
+    .select({
+      id: qrGenerationsTable.id,
+      templateName: qrGenerationsTable.templateName,
+      amount: qrGenerationsTable.amount,
+      variableSymbol: qrGenerationsTable.variableSymbol,
+      generatedAt: qrGenerationsTable.generatedAt,
+      status: qrGenerationsTable.status,
+    })
+    .from(qrGenerationsTable)
+    .where(eq(qrGenerationsTable.userId, profile[0].id))
+    .orderBy(desc(qrGenerationsTable.generatedAt))
+    .limit(limit);
 
-  const monthlyUsage = await db
+  return recentQRs;
+}
+
+// Get usage statistics for current period
+export async function getCurrentUsageStats() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return {
+      used: 0,
+      limit: 150, // Default free plan limit
+      remaining: 150,
+      plan: 'free',
+      resetDate: new Date(),
+    };
+  }
+
+  // Get user profile
+  const profile = await db
+    .select()
+    .from(profilesTable)
+    .where(eq(profilesTable.clerkId, userId))
+    .limit(1);
+
+  if (!profile.length) {
+    return {
+      used: 0,
+      limit: 150,
+      remaining: 150,
+      plan: 'free',
+      resetDate: new Date(),
+    };
+  }
+
+  // Calculate current month usage
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [currentUsage] = await db
     .select({ count: count() })
     .from(qrGenerationsTable)
     .where(
       and(
-        eq(qrGenerationsTable.userId, profile.id),
-        gte(qrGenerationsTable.generatedAt, startOfCurrentMonth)
+        eq(qrGenerationsTable.userId, profile[0].id),
+        gte(qrGenerationsTable.generatedAt, startOfMonth)
       )
     );
 
-  const used = monthlyUsage[0].count;
-  const limits = {
-    free: 150,
-    starter: 500,
-    professional: -1, // unlimited
+  // TODO: Get actual plan from Clerk billing
+  // For now, default to free plan
+  const plan = 'free';
+  const limit = 150; // Free plan limit
+
+  const used = currentUsage.count;
+  const remaining = Math.max(0, limit - used);
+
+  // Calculate next reset date (start of next month)
+  const resetDate = new Date(startOfMonth);
+  resetDate.setMonth(resetDate.getMonth() + 1);
+
+  return {
+    used,
+    limit,
+    remaining,
+    plan,
+    resetDate,
   };
+}
 
-  // Default to free plan if no subscription found
-  const limit = limits.free;
-  const allowed = limit === -1 || used < limit;
-  const remaining = limit === -1 ? -1 : Math.max(0, limit - used);
+// Aliases for backward compatibility with dashboard page
+export async function getQrHistory(limit = 10) {
+  return getRecentQRGenerations(limit);
+}
 
-  return { allowed, remaining };
+export async function getUserStats() {
+  return getDashboardStats();
+}
+
+export async function getUserTemplates() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error('Unauthorized');
+  }
+
+  // Get user profile
+  const profile = await db
+    .select()
+    .from(profilesTable)
+    .where(eq(profilesTable.clerkId, userId))
+    .limit(1);
+
+  if (!profile.length) {
+    return [];
+  }
+
+  const templates = await db
+    .select()
+    .from(paymentTemplatesTable)
+    .where(
+      and(
+        eq(paymentTemplatesTable.userId, profile[0].id),
+        eq(paymentTemplatesTable.isActive, true)
+      )
+    )
+    .orderBy(desc(paymentTemplatesTable.usageCount));
+
+  return templates;
 }
