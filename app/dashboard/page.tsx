@@ -1,13 +1,9 @@
-import {
-  getQrHistory,
-  getUserStats,
-  getUserTemplates,
-} from '@/app/actions/dashboard';
+import { getQrHistory, getUserTemplates } from '@/app/actions/dashboard';
 import { SubscriptionCard } from '@/components/billing/subscription-card';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -16,47 +12,47 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/format-utils';
+import { cn } from '@/lib/utils';
 import { CreditCardIcon, PlusIcon, QrCodeIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function DashboardPage() {
-  const [stats, templates, recentHistory] = await Promise.all([
-    getUserStats(),
+  const [templates, recentHistory] = await Promise.all([
     getUserTemplates(),
     getQrHistory(5), // Get last 5 QR generations
   ]);
 
   return (
-    <FadeContainer className="space-y-8">
+    <FadeContainer className="space-y-6">
       <FadeDiv>
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div>
-            <h1 className="font-bold text-3xl tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Prehľad vašich QR kódov a šablón
-            </p>
+            <h1 className="font-medium text-2xl tracking-tight md:text-3xl">
+              Dashboard
+            </h1>
           </div>
-          <Link href="/dashboard/generator">
-            <Button className="gap-2">
-              <PlusIcon className="h-4 w-4" />
-              Vytvoriť QR kód
-            </Button>
+          <Link
+            href="/dashboard/generator"
+            className={cn(buttonVariants({ size: 'sm' }))}
+          >
+            <PlusIcon className="size-4" />
+            Vytvoriť QR kód
           </Link>
         </div>
       </FadeDiv>
 
       {/* Stats Overview */}
       <FadeDiv>
-        <StatsCards stats={stats} />
+        <StatsCards />
       </FadeDiv>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Activity */}
         <FadeDiv className="lg:col-span-2">
-          <Card>
+          <Card className="size-full shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <QrCodeIcon className="h-5 w-5" />
+                <QrCodeIcon className="size-5" />
                 Posledná aktivita
               </CardTitle>
               <CardDescription>Vaše najnovšie QR kódy</CardDescription>
@@ -103,16 +99,19 @@ export default async function DashboardPage() {
                 </div>
               ) : (
                 <div className="py-6 text-center">
-                  <QrCodeIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 font-medium text-sm">Žiadne QR kódy</h3>
-                  <p className="mt-1 text-muted-foreground text-sm">
-                    Začnite vytvorením vašho prvého QR kódu
-                  </p>
-                  <Link href="/dashboard/generator">
-                    <Button className="mt-4">
-                      <PlusIcon className="mr-2 h-4 w-4" />
-                      Vytvoriť QR kód
-                    </Button>
+                  <QrCodeIcon className="mx-auto size-12 text-muted-foreground" />
+                  <div className="mb-4">
+                    <h3 className="mt-2 font-medium text-sm">Žiadne QR kódy</h3>
+                    <p className="mt-1 text-muted-foreground text-sm">
+                      Začnite vytvorením vašho prvého QR kódu
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/generator"
+                    className={cn(buttonVariants({ size: 'sm' }))}
+                  >
+                    <PlusIcon className="size-4" />
+                    Vytvoriť QR kód
                   </Link>
                 </div>
               )}
@@ -126,10 +125,10 @@ export default async function DashboardPage() {
         </FadeDiv>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Templates Quick Access */}
         <FadeDiv>
-          <Card>
+          <Card className="size-full shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCardIcon className="h-5 w-5" />
@@ -175,16 +174,19 @@ export default async function DashboardPage() {
                 </div>
               ) : (
                 <div className="py-6 text-center">
-                  <CreditCardIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 font-medium text-sm">Žiadne šablóny</h3>
-                  <p className="mt-1 text-muted-foreground text-sm">
-                    Vytvorte šablónu pre opakované platby
-                  </p>
-                  <Link href="/dashboard/templates">
-                    <Button className="mt-4">
-                      <PlusIcon className="mr-2 h-4 w-4" />
-                      Vytvoriť šablónu
-                    </Button>
+                  <CreditCardIcon className="mx-auto size-12 text-muted-foreground" />
+                  <div className="mb-4">
+                    <h3 className="mt-2 font-medium text-sm">Žiadne šablóny</h3>
+                    <p className="mt-1 text-muted-foreground text-sm">
+                      Vytvorte šablónu pre opakované platby
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/templates"
+                    className={cn(buttonVariants({ size: 'sm' }))}
+                  >
+                    <PlusIcon className="size-4" />
+                    Vytvoriť šablónu
                   </Link>
                 </div>
               )}
@@ -193,8 +195,8 @@ export default async function DashboardPage() {
         </FadeDiv>
 
         {/* Placeholder for future feature */}
-        <FadeDiv>
-          <Card>
+        <FadeDiv className="lg:col-span-2">
+          <Card className="size-full shadow-xl">
             <CardHeader>
               <CardTitle>Nastavenia účtu</CardTitle>
               <CardDescription>
@@ -218,49 +220,6 @@ export default async function DashboardPage() {
           </Card>
         </FadeDiv>
       </div>
-
-      {/* Usage Progress Bar */}
-      {stats.usageLimit !== -1 && (
-        <FadeDiv>
-          <Card>
-            <CardHeader>
-              <CardTitle>Mesačné využitie</CardTitle>
-              <CardDescription>
-                {stats.plan === 'free'
-                  ? 'Bezplatný plán'
-                  : `${stats.plan} plán`}{' '}
-                -{stats.remainingUses} zostávajúcich QR kódov v tomto mesiaci
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Využité</span>
-                  <span>
-                    {stats.qrCodesGenerated} / {stats.usageLimit}
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{
-                      width: `${Math.min(
-                        (stats.qrCodesGenerated / stats.usageLimit) * 100,
-                        100
-                      )}%`,
-                    }}
-                  />
-                </div>
-                {stats.qrCodesGenerated / stats.usageLimit > 0.8 && (
-                  <p className="text-amber-600 text-sm">
-                    Blížite sa k mesačnému limitu. Zvážte upgrade vášho plánu.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </FadeDiv>
-      )}
     </FadeContainer>
   );
 }

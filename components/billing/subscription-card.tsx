@@ -94,7 +94,7 @@ export function SubscriptionCard() {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="size-full shadow-xl">
         <CardHeader>
           <div className="h-6 w-32 animate-pulse rounded bg-muted" />
         </CardHeader>
@@ -127,7 +127,7 @@ export function SubscriptionCard() {
   const Icon = planInfo.icon;
 
   return (
-    <Card>
+    <Card className="size-full shadow-xl">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

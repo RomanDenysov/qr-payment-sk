@@ -3,10 +3,10 @@
 import { hasProfile } from '@/app/actions/profile';
 import { ProfileSetupDialog } from '@/components/profile-setup-dialog';
 import { useUser } from '@clerk/nextjs';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 interface ProfileGuardProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function ProfileGuard({ children }: ProfileGuardProps) {
@@ -41,23 +41,6 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
 
     checkProfile();
   }, [isLoaded, isSignedIn]);
-
-  // Show loading state while checking authentication or profile
-  if (!isLoaded || isChecking) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-32 w-32 animate-spin rounded-full border-primary border-b-2" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is not signed in, render children normally
-  if (!isSignedIn) {
-    return <>{children}</>;
-  }
 
   // If profile doesn't exist and we're signed in, only show the setup dialog
   // Don't render children until profile is created

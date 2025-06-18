@@ -1,70 +1,41 @@
-import type { UserStats } from '@/app/actions/dashboard';
+import { getUserStats } from '@/app/actions/dashboard';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatCurrency, formatLargeNumber } from '@/lib/format-utils';
-import {
-  CreditCardIcon,
-  QrCodeIcon,
-  TrendingUpIcon,
-  UsersIcon,
-} from 'lucide-react';
+import { formatLargeNumber } from '@/lib/format-utils';
 
-interface StatsCardsProps {
-  stats: UserStats;
-}
+export async function StatsCards() {
+  const stats = await getUserStats();
 
-export function StatsCards({ stats }: StatsCardsProps) {
   const statItems = [
     {
       title: 'Celkovo QR kódov',
-      value: formatLargeNumber(stats.totalQrCodes),
-      description: 'vytvorených kódov',
-      icon: QrCodeIcon,
-      color: 'text-blue-600',
+      value: formatLargeNumber(stats.totalQRs),
     },
     {
       title: 'Tento mesiac',
-      value: formatLargeNumber(stats.monthlyQrCodes),
-      description: `z ${stats.usageLimit === -1 ? '∞' : formatLargeNumber(stats.usageLimit)} dostupných`,
-      icon: TrendingUpIcon,
-      color: 'text-green-600',
+      value: formatLargeNumber(stats.currentMonthQRs),
     },
     {
       title: 'Šablóny',
-      value: formatLargeNumber(stats.totalTemplates),
-      description: 'aktívnych šablón',
-      icon: CreditCardIcon,
-      color: 'text-purple-600',
+      value: formatLargeNumber(stats.activeTemplates),
     },
     {
-      title: 'Celková suma',
-      value: formatCurrency(stats.totalAmount),
-      description: 'spracovaných platieb',
-      icon: UsersIcon,
-      color: 'text-orange-600',
+      title: 'Rast',
+      value: `${stats.growthPercentage}%`,
     },
   ];
 
   return (
-    <FadeContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <FadeContainer className="grid grid-cols-2 items-stretch gap-4 py-10 md:grid-cols-4">
       {statItems.map((item) => {
-        const Icon = item.icon;
         return (
-          <FadeDiv key={item.title}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-medium text-muted-foreground text-sm">
-                  {item.title}
-                </CardTitle>
-                <Icon className={`h-4 w-4 ${item.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="font-bold text-2xl">{item.value}</div>
-                <p className="text-muted-foreground text-xs">
-                  {item.description}
-                </p>
-              </CardContent>
-            </Card>
+          <FadeDiv
+            key={item.title}
+            className="flex flex-col items-center justify-center"
+          >
+            <span className="font-bold text-3xl text-stroke leading-none">
+              {item.value}
+            </span>
+            <p className="text-muted-foreground text-xs">{item.title}</p>
           </FadeDiv>
         );
       })}
