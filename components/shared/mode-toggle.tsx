@@ -22,10 +22,6 @@ export function ModeToggle() {
 
   const currentTheme = (theme as ThemeOption) || 'system';
 
-  const handleThemeChange = (newTheme: ThemeOption) => {
-    setTheme(newTheme);
-  };
-
   return (
     <div className="flex w-fit items-center rounded-lg border bg-background p-1">
       <AnimatedBackground

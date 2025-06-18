@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatedBackground } from '@/components/motion-primitives/animated-background';
 import { Logo, LogoSmall } from '@/components/shared/logo';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -58,25 +59,35 @@ export function Header() {
           <div className="flex flex-1 items-center justify-start gap-2">
             <MobileMenu />
 
-            <div className="transition-transform duration-200 hover:scale-105">
+            <div className="transition-opacity duration-200 hover:opacity-90">
               <Logo />
             </div>
           </div>
 
-          <nav className="hidden flex-1 items-center justify-center gap-1 md:flex">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                className={cn(
-                  buttonVariants({ variant: 'ghost' }),
-                  'relative overflow-hidden transition-all duration-200 hover:bg-primary/10 hover:text-primary'
-                )}
-                href={item.href}
-                aria-label={item.label}
-              >
-                {item.label}
-              </Link>
-            ))}
+          <nav className="hidden flex-1 items-center justify-center gap-3 md:flex">
+            <AnimatedBackground
+              className="rounded-md border border-primary"
+              transition={{
+                type: 'spring',
+                bounce: 0.2,
+                duration: 0.3,
+              }}
+              enableHover
+            >
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  data-id={item.href}
+                  className={cn(
+                    "dark:aria-invalid:ring-destructive/40'size-'])]:size-4 inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 font-medium text-sm outline-none transition-all [&_svg:not([class*= focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 has-[>svg]:px-2.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0"
+                  )}
+                  href={item.href}
+                  aria-label={item.label}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </AnimatedBackground>
           </nav>
 
           <div className="flex flex-1 items-center justify-end gap-3">
@@ -117,14 +128,15 @@ function AuthButtons() {
 
       <SignedIn>
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden transition-colors hover:bg-destructive/10 hover:text-destructive sm:flex"
-            asChild
+          <Link
+            href="/dashboard"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'hidden border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex'
+            )}
           >
-            <Link href="/dashboard">Dashboard</Link>
-          </Button>
+            Dashboard
+          </Link>
 
           <UserButton
             appearance={{
