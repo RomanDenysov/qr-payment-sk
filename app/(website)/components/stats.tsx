@@ -106,7 +106,7 @@ const FeatureDecorator = ({ children }: { children: ReactNode }) => (
       aria-hidden
       className="absolute inset-0 bg-radial from-transparent to-75% to-background"
     />
-    <div className="absolute inset-0 m-auto flex size-24 items-center justify-center border-t border-l bg-white dark:bg-background">
+    <div className="absolute inset-0 m-auto flex size-0.5 items-center justify-center rounded-full border-t border-l bg-white dark:bg-background">
       {children}
     </div>
   </div>

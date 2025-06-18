@@ -1,6 +1,7 @@
 import { FadeContainer, FadeDiv, FadeSpan } from '@/components/motion/fade';
 import { Badge } from '@/components/ui/badge';
 import type { ReactNode } from 'react';
+import Balancer from 'react-wrap-balancer';
 import { QRCard } from './qr-card';
 
 export function Hero() {
@@ -20,9 +21,11 @@ export function Hero() {
           </FadeDiv>
           <div className="flex flex-col gap-4">
             <h1 className="text-center font-medium text-5xl tracking-tighter sm:text-7xl sm:leading-[4.5rem] md:text-left">
-              <FadeSpan>Okamžité prevody s</FadeSpan>
-              <br />
-              <FadeSpan className="text-stroke">QR Platby</FadeSpan>
+              <Balancer>
+                <FadeSpan className="text-nowrap">Okamžité prevody s</FadeSpan>
+                <br />
+                <FadeSpan className="text-stroke">QR Platby</FadeSpan>
+              </Balancer>
             </h1>
             <p className="max-w-xl text-balance text-center text-base text-muted-foreground tracking-tight sm:text-xl md:text-left">
               <FadeSpan>Generátor BySquare QR kódov pre váš biznis.</FadeSpan>

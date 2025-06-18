@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import dynamic from 'next/dynamic';
+import { Provider as WBProvider } from 'react-wrap-balancer';
 import { Toaster } from '../ui/sonner';
 import { ThemeProvider } from './theme-provider';
 
@@ -21,7 +22,7 @@ export function Providers({ children }: ProvidersProps) {
       disableTransitionOnChange
     >
       <DynamicClerkClientProvider>
-        {children}
+        <WBProvider>{children}</WBProvider>
         <Toaster />
       </DynamicClerkClientProvider>
     </ThemeProvider>
