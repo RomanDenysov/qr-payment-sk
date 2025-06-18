@@ -1,6 +1,4 @@
 'use client';
-
-import { cn } from '@/lib/utils';
 import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { AnimatedBackground } from '../motion-primitives/animated-background';
@@ -45,11 +43,9 @@ export function ModeToggle() {
             data-id={option.value}
             type="button"
             aria-label={`Switch to ${option.label.toLowerCase()}`}
-            className={cn(
-              'relative z-10 flex items-center justify-center p-2 transition-all duration-200 active:scale-[0.98]'
-            )}
+            className="relative z-10 flex items-center justify-center p-2 transition-all duration-200 active:scale-[0.98]"
           >
-            <option.icon className="size-4" />
+            <option.icon className="size-4 text-muted-foreground" />
             <span className="sr-only">{option.label}</span>
           </button>
         ))}
