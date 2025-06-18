@@ -1,5 +1,6 @@
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
 import { Logo } from '@/components/shared/logo';
+import { ModeToggle } from '@/components/shared/mode-toggle';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -118,6 +119,7 @@ export function Footer() {
                     </div>
                   </div>
                 )}
+                <ModeToggle />
 
                 <div className="space-y-3">
                   <h3 className="font-semibold">Sledujte nás</h3>
