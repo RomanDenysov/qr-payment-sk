@@ -2,7 +2,7 @@ import { getUserStats } from '@/app/actions/dashboard';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
 import { formatLargeNumber } from '@/lib/format-utils';
 
-export async function StatsCards() {
+export async function StatsLabels() {
   const stats = await getUserStats();
 
   const statItems = [

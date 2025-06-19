@@ -3,7 +3,7 @@ import {
   getUserTemplates,
 } from '@/app/actions/dashboard';
 import { SubscriptionCard } from '@/components/billing/subscription-card';
-import { StatsCards } from '@/components/dashboard/stats-cards';
+import { StatsLabels } from '@/components/dashboard/stats-labels';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
 
       {/* Stats Overview */}
       <FadeDiv>
-        <StatsCards />
+        <StatsLabels />
       </FadeDiv>
 
       <div className="grid gap-6 lg:grid-cols-3">

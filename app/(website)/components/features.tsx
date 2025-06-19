@@ -1,6 +1,6 @@
 import { FadeContainer, FadeDiv, FadeSpan } from '@/components/motion/fade';
 import { Badge } from '@/components/ui/badge';
-import { CheckIcon } from 'lucide-react';
+import { Smartphone, Sparkles, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export function Features() {
@@ -28,10 +28,10 @@ export function Features() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 pt-12 sm:grid-cols-3 md:gap-10">
+        <div className="grid grid-cols-2 gap-6 pt-12 sm:grid-cols-3 md:gap-10">
           <FadeDiv className="group flex flex-col items-center gap-6">
             <FeatureDecorator>
-              <CheckIcon className="mt-2 h-4 w-4 text-primary" />
+              <Smartphone className="size-5 text-primary" />
             </FeatureDecorator>
             <div className="flex flex-col gap-1 text-center">
               <p>Jednoduché používanie</p>
@@ -42,7 +42,7 @@ export function Features() {
           </FadeDiv>
           <FadeDiv className="group flex flex-col items-center gap-6">
             <FeatureDecorator>
-              <CheckIcon className="mt-2 h-4 w-4 text-primary" />
+              <Zap className="size-5 text-primary" />
             </FeatureDecorator>
             <div className="flex flex-col gap-1 text-center">
               <p>Rýchle a spoľahlivé</p>
@@ -53,7 +53,7 @@ export function Features() {
           </FadeDiv>
           <FadeDiv className="group flex flex-col items-center gap-6">
             <FeatureDecorator>
-              <CheckIcon className="mt-2 h-4 w-4 text-primary" />
+              <Sparkles className="size-5 text-primary" />
             </FeatureDecorator>
             <div className="flex flex-col gap-1 text-center">
               <p>Moderné a profesionálne</p>

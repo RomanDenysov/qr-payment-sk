@@ -22,7 +22,9 @@ export function Hero() {
           <div className="flex flex-col gap-4">
             <h1 className="text-center font-medium text-5xl tracking-tighter sm:text-7xl sm:leading-[4.5rem] md:text-left">
               <Balancer>
-                <FadeSpan className="text-nowrap">Okamžité prevody s</FadeSpan>
+                <FadeSpan className="text-balance xl:text-nowrap">
+                  Okamžité prevody s
+                </FadeSpan>
                 <br />
                 <FadeSpan className="text-stroke">QR Platby</FadeSpan>
               </Balancer>

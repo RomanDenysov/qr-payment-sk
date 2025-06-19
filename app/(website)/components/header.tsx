@@ -108,7 +108,7 @@ function AuthButtons() {
             <Button
               variant="ghost"
               size="sm"
-              className="hidden transition-colors hover:bg-primary/10 hover:text-primary sm:flex"
+              className="hidden border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex"
             >
               <LogInIcon className="size-4" />
               Prihlásiť sa

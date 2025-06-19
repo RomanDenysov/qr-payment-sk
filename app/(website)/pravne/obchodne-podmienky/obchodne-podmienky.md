@@ -133,10 +133,3 @@ Platné od: 1. január 2025
 **14.2** Pre alternatívne riešenie sporov je možné obrátiť sa na platformu RS - https://ec.europa.eu/consumers/odr.
 
 **14.3** V prípade neplatnosti niektorého ustanovenia zostávajú ostatné v platnosti.
-
----
-
-**Kontaktné údaje:**
-- Email: [EMAIL]
-- Telefón: [TELEFÓN]
-- Adresa: [ADRESA] 

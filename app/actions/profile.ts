@@ -1,7 +1,7 @@
 'use server';
 
 import db from '@/db';
-import { profilesTable } from '@/db/schema';
+import { profilesTable, userIbansTable } from '@/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { eq } from 'drizzle-orm';
@@ -12,12 +12,15 @@ import { z } from 'zod';
 const profileSchema = z.object({
   businessName: z.string().min(1).max(200).optional(),
   email: z.string().email(),
-  defaultIban: z.string().optional(),
 });
 
 const createProfileSchema = z.object({
   businessName: z.string().min(1, 'Business name is required').max(200),
-  defaultIban: z.string().optional(),
+  // IBAN fields (optional)
+  iban: z.string().optional(),
+  accountName: z.string().optional(),
+  bankName: z.string().optional(),
+  isDefault: z.string().optional(), // Will be 'true' if set
 });
 
 export async function createProfile(formData: FormData) {
@@ -38,11 +41,17 @@ export async function createProfile(formData: FormData) {
 
   // Extract and validate form data
   const businessName = formData.get('businessName') as string;
-  const defaultIban = formData.get('defaultIban') as string;
+  const iban = formData.get('iban') as string;
+  const accountName = formData.get('accountName') as string;
+  const bankName = formData.get('bankName') as string;
+  const isDefault = formData.get('isDefault') as string;
 
   const validatedData = createProfileSchema.parse({
     businessName,
-    defaultIban: defaultIban || undefined,
+    iban: iban || undefined,
+    accountName: accountName || undefined,
+    bankName: bankName || undefined,
+    isDefault: isDefault || undefined,
   });
 
   try {
@@ -66,6 +75,18 @@ export async function createProfile(formData: FormData) {
         email,
       })
       .returning();
+
+    // If IBAN data is provided, create the first IBAN record
+    if (validatedData.iban) {
+      await db.insert(userIbansTable).values({
+        userId: newProfile[0].id,
+        iban: validatedData.iban,
+        accountName: validatedData.accountName || null,
+        bankName: validatedData.bankName || null,
+        isDefault: validatedData.isDefault === 'true',
+        isActive: true,
+      });
+    }
 
     revalidatePath('/dashboard');
     return { success: true, profile: newProfile[0] };

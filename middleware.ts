@@ -1,9 +1,19 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const publicRoutes = createRouteMatcher(['/', '/api/v1/qr/generate']);
+const publicRoutes = createRouteMatcher([
+  '/',
+  '/api/v1/qr/generate',
+  '/prihlasenie(.*)',
+  '/registracia(.*)',
+  '/pravne(.*)',
+]);
 const apiRoutes = createRouteMatcher(['/api/(.*)']);
 
-export default clerkMiddleware();
+export default clerkMiddleware(async (auth, req) => {
+  if (!publicRoutes(req)) {
+    await auth.protect();
+  }
+});
 
 export const config = {
   matcher: [
