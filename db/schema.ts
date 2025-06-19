@@ -14,31 +14,35 @@ import {
 
 const createTable = pgTableCreator((name) => `sk_${name}`);
 
-// User profiles - business-specific data (Clerk manages the actual user entity)
-export const profilesTable = createTable(
-  'profiles',
+// Optional business profiles - only created when users need business features
+// This stores data that can't be stored in Clerk (preferences, business settings, etc.)
+export const businessProfilesTable = createTable(
+  'business_profiles',
   {
     id: uuid().primaryKey().defaultRandom(),
-    clerkId: varchar('clerk_id', { length: 100 }).unique().notNull(),
-    email: varchar('email', { length: 255 }).unique().notNull(),
-    businessName: varchar('business_name', { length: 200 }),
+    clerkId: varchar('clerk_id', { length: 100 }).unique().notNull(), // Direct reference to Clerk user
+    businessName: varchar('business_name', { length: 200 }).notNull(),
+    businessType: varchar('business_type', { length: 50 }), // 'individual', 'company', 'ngo'
+    vatNumber: varchar('vat_number', { length: 20 }), // Slovak IČ DPH
+    registrationNumber: varchar('registration_number', { length: 20 }), // Slovak IČO
+
+    // Preferences that can't be stored in Clerk
+    defaultCurrency: varchar('default_currency', { length: 3 }).default('EUR'),
+    defaultQrSize: integer('default_qr_size').default(512),
+    brandColor: varchar('brand_color', { length: 7 }).default('#3b82f6'),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [
-    index('idx_profiles_clerk_id').on(table.clerkId),
-    index('idx_profiles_email').on(table.email),
-  ]
+  (table) => [index('idx_business_profiles_clerk_id').on(table.clerkId)]
 );
 
+// User IBANs - directly reference Clerk user ID
 export const userIbansTable = createTable(
   'user_ibans',
   {
     id: uuid().primaryKey().defaultRandom(),
-    userId: uuid('user_id')
-      .references(() => profilesTable.id, { onDelete: 'cascade' })
-      .notNull(),
+    clerkId: varchar('clerk_id', { length: 100 }).notNull(), // Direct reference to Clerk user
     iban: varchar('iban', { length: 34 }).notNull(), // Slovak IBAN format
     bankName: varchar('bank_name', { length: 100 }), // e.g., "VÚB Banka", "Slovenská sporiteľňa"
     accountName: varchar('account_name', { length: 100 }), // e.g., "Business Account", "Personal"
@@ -48,20 +52,17 @@ export const userIbansTable = createTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
-    index('idx_user_ibans_user_active').on(table.userId, table.isActive),
-    index('idx_user_ibans_user_default').on(table.userId, table.isDefault),
-    index('idx_user_ibans_unique_default').on(table.userId, table.isDefault),
+    index('idx_user_ibans_clerk_id_active').on(table.clerkId, table.isActive),
+    index('idx_user_ibans_clerk_id_default').on(table.clerkId, table.isDefault),
   ]
 );
 
-// Payment templates - store only data, no pre-generated QR codes
+// Payment templates - directly reference Clerk user ID
 export const paymentTemplatesTable = createTable(
   'payment_templates',
   {
     id: uuid().primaryKey().defaultRandom(),
-    userId: uuid('user_id')
-      .references(() => profilesTable.id, { onDelete: 'cascade' })
-      .notNull(),
+    clerkId: varchar('clerk_id', { length: 100 }).notNull(), // Direct reference to Clerk user
     sortOrder: integer('sort_order').default(0).notNull(),
     name: varchar('name', { length: 100 }).notNull(),
     amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
@@ -69,7 +70,7 @@ export const paymentTemplatesTable = createTable(
     userIbanId: uuid('user_iban_id').references(() => userIbansTable.id, {
       onDelete: 'restrict',
     }),
-    color: varchar('color', { length: 20 }).default('#blue'),
+    color: varchar('color', { length: 20 }).default('#3b82f6'),
     icon: varchar('icon', { length: 50 }).default('payment'),
     usageCount: integer('usage_count').default(0).notNull(),
     isActive: boolean('is_active').default(true).notNull(),
@@ -77,19 +78,20 @@ export const paymentTemplatesTable = createTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
-    index('idx_payment_templates_user_active').on(table.userId, table.isActive),
+    index('idx_payment_templates_clerk_id_active').on(
+      table.clerkId,
+      table.isActive
+    ),
     index('idx_payment_templates_usage_count').on(table.usageCount),
   ]
 );
 
-// QR generations - transaction history for analytics and tracking
+// QR generations - directly reference Clerk user ID
 export const qrGenerationsTable = createTable(
   'qr_generations',
   {
     id: uuid().primaryKey().defaultRandom(),
-    userId: uuid('user_id')
-      .references(() => profilesTable.id, { onDelete: 'cascade' })
-      .notNull(),
+    clerkId: varchar('clerk_id', { length: 100 }).notNull(), // Direct reference to Clerk user
     templateId: uuid('template_id').references(() => paymentTemplatesTable.id, {
       onDelete: 'set null',
     }),
@@ -107,7 +109,10 @@ export const qrGenerationsTable = createTable(
     generatedAt: timestamp('generated_at').defaultNow().notNull(),
   },
   (table) => [
-    index('idx_qr_generations_user_date').on(table.userId, table.generatedAt),
+    index('idx_qr_generations_clerk_id_date').on(
+      table.clerkId,
+      table.generatedAt
+    ),
     index('idx_qr_generations_variable_symbol').on(table.variableSymbol),
     index('idx_qr_generations_template_id').on(table.templateId),
     index('idx_qr_generations_user_iban').on(table.userIbanId),
@@ -115,31 +120,33 @@ export const qrGenerationsTable = createTable(
 );
 
 // Define relationships for Drizzle ORM
+export const businessProfilesRelations = relations(
+  businessProfilesTable,
+  ({ many }) => ({
+    paymentTemplates: many(paymentTemplatesTable),
+    qrGenerations: many(qrGenerationsTable),
+    ibans: many(userIbansTable),
+  })
+);
+
 export const userIbansRelations = relations(
   userIbansTable,
   ({ one, many }) => ({
-    profile: one(profilesTable, {
-      fields: [userIbansTable.userId],
-      references: [profilesTable.id],
+    businessProfile: one(businessProfilesTable, {
+      fields: [userIbansTable.clerkId],
+      references: [businessProfilesTable.clerkId],
     }),
     paymentTemplates: many(paymentTemplatesTable),
     qrGenerations: many(qrGenerationsTable),
   })
 );
 
-// Update profiles relations
-export const profilesRelations = relations(profilesTable, ({ many }) => ({
-  paymentTemplates: many(paymentTemplatesTable),
-  qrGenerations: many(qrGenerationsTable),
-  ibans: many(userIbansTable), // Add this
-}));
-
 export const paymentTemplatesRelations = relations(
   paymentTemplatesTable,
   ({ one, many }) => ({
-    profile: one(profilesTable, {
-      fields: [paymentTemplatesTable.userId],
-      references: [profilesTable.id],
+    businessProfile: one(businessProfilesTable, {
+      fields: [paymentTemplatesTable.clerkId],
+      references: [businessProfilesTable.clerkId],
     }),
     userIban: one(userIbansTable, {
       fields: [paymentTemplatesTable.userIbanId],
@@ -152,9 +159,9 @@ export const paymentTemplatesRelations = relations(
 export const qrGenerationsRelations = relations(
   qrGenerationsTable,
   ({ one }) => ({
-    profile: one(profilesTable, {
-      fields: [qrGenerationsTable.userId],
-      references: [profilesTable.id],
+    businessProfile: one(businessProfilesTable, {
+      fields: [qrGenerationsTable.clerkId],
+      references: [businessProfilesTable.clerkId],
     }),
     template: one(paymentTemplatesTable, {
       fields: [qrGenerationsTable.templateId],
@@ -168,8 +175,8 @@ export const qrGenerationsRelations = relations(
 );
 
 // Type exports for use throughout the application
-export type Profile = typeof profilesTable.$inferSelect;
-export type NewProfile = typeof profilesTable.$inferInsert;
+export type BusinessProfile = typeof businessProfilesTable.$inferSelect;
+export type NewBusinessProfile = typeof businessProfilesTable.$inferInsert;
 
 export type UserIban = typeof userIbansTable.$inferSelect;
 export type NewUserIban = typeof userIbansTable.$inferInsert;
