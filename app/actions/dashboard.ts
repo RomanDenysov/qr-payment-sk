@@ -6,11 +6,13 @@ import {
   profilesTable,
   qrGenerationsTable,
 } from '@/db/schema';
+import { getMonthlyBoundaries } from '@/lib/date-utils';
+import { unstable_cache } from '@/lib/unstable-cache';
 import { auth } from '@clerk/nextjs/server';
 import { and, count, desc, eq, gte, lt } from 'drizzle-orm';
 
 // Get dashboard statistics
-export async function getDashboardStats() {
+export async function getUserStats() {
   const { userId } = await auth();
 
   if (!userId) {
@@ -24,17 +26,20 @@ export async function getDashboardStats() {
     .where(eq(profilesTable.clerkId, userId))
     .limit(1);
 
+  // Return default stats if no profile exists
   if (!profile.length) {
-    throw new Error('Profile not found');
+    return {
+      currentMonthQRs: 0,
+      totalQRs: 0,
+      activeTemplates: 0,
+      growthPercentage: 0,
+    };
   }
 
   const profileId = profile[0].id;
 
-  // Calculate date ranges
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+  // Get date boundaries using our utility
+  const { currentMonth, lastMonth } = getMonthlyBoundaries();
 
   // Get current month stats
   const [currentMonthQRs] = await db
@@ -43,7 +48,7 @@ export async function getDashboardStats() {
     .where(
       and(
         eq(qrGenerationsTable.userId, profileId),
-        gte(qrGenerationsTable.generatedAt, startOfMonth)
+        gte(qrGenerationsTable.generatedAt, currentMonth.start)
       )
     );
 
@@ -54,8 +59,8 @@ export async function getDashboardStats() {
     .where(
       and(
         eq(qrGenerationsTable.userId, profileId),
-        gte(qrGenerationsTable.generatedAt, startOfLastMonth),
-        lt(qrGenerationsTable.generatedAt, endOfLastMonth)
+        gte(qrGenerationsTable.generatedAt, lastMonth.start),
+        lt(qrGenerationsTable.generatedAt, lastMonth.end)
       )
     );
 
@@ -93,8 +98,27 @@ export async function getDashboardStats() {
   };
 }
 
-// Get recent QR generations
-export async function getRecentQRGenerations(limit = 10) {
+// Cached function that only handles DB operations
+const getCachedRecentQRGenerations = unstable_cache(
+  async (profileId: string, limit: number) => {
+    return db.query.qrGenerationsTable.findMany({
+      with: {
+        template: true,
+        userIban: true,
+      },
+      where: eq(qrGenerationsTable.userId, profileId),
+      orderBy: desc(qrGenerationsTable.generatedAt),
+      limit: limit || 10,
+    });
+  },
+  ['recent-qr-generations'],
+  {
+    revalidate: 60,
+  }
+);
+
+// Wrapper function that handles auth and calls the cached function
+export async function getRecentQRGenerations(limit: number) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -108,25 +132,13 @@ export async function getRecentQRGenerations(limit = 10) {
     .where(eq(profilesTable.clerkId, userId))
     .limit(1);
 
+  // Return empty array if no profile exists
   if (!profile.length) {
-    throw new Error('Profile not found');
+    return [];
   }
 
-  const recentQRs = await db
-    .select({
-      id: qrGenerationsTable.id,
-      templateName: qrGenerationsTable.templateName,
-      amount: qrGenerationsTable.amount,
-      variableSymbol: qrGenerationsTable.variableSymbol,
-      generatedAt: qrGenerationsTable.generatedAt,
-      status: qrGenerationsTable.status,
-    })
-    .from(qrGenerationsTable)
-    .where(eq(qrGenerationsTable.userId, profile[0].id))
-    .orderBy(desc(qrGenerationsTable.generatedAt))
-    .limit(limit);
-
-  return recentQRs;
+  // Call the cached function with profileId
+  return getCachedRecentQRGenerations(profile[0].id, limit);
 }
 
 // Get usage statistics for current period
@@ -150,20 +162,20 @@ export async function getCurrentUsageStats() {
     .where(eq(profilesTable.clerkId, userId))
     .limit(1);
 
+  // Return default usage stats if no profile exists
   if (!profile.length) {
+    const { nextReset } = getMonthlyBoundaries();
     return {
       used: 0,
       limit: 150,
       remaining: 150,
       plan: 'free',
-      resetDate: new Date(),
+      resetDate: nextReset,
     };
   }
 
-  // Calculate current month usage
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  // Get date boundaries using our utility
+  const { currentMonth, nextReset } = getMonthlyBoundaries();
 
   const [currentUsage] = await db
     .select({ count: count() })
@@ -171,7 +183,7 @@ export async function getCurrentUsageStats() {
     .where(
       and(
         eq(qrGenerationsTable.userId, profile[0].id),
-        gte(qrGenerationsTable.generatedAt, startOfMonth)
+        gte(qrGenerationsTable.generatedAt, currentMonth.start)
       )
     );
 
@@ -183,26 +195,13 @@ export async function getCurrentUsageStats() {
   const used = currentUsage.count;
   const remaining = Math.max(0, limit - used);
 
-  // Calculate next reset date (start of next month)
-  const resetDate = new Date(startOfMonth);
-  resetDate.setMonth(resetDate.getMonth() + 1);
-
   return {
     used,
     limit,
     remaining,
     plan,
-    resetDate,
+    resetDate: nextReset,
   };
-}
-
-// Aliases for backward compatibility with dashboard page
-export async function getQrHistory(limit = 10) {
-  return getRecentQRGenerations(limit);
-}
-
-export async function getUserStats() {
-  return getDashboardStats();
 }
 
 export async function getUserTemplates() {
@@ -219,6 +218,7 @@ export async function getUserTemplates() {
     .where(eq(profilesTable.clerkId, userId))
     .limit(1);
 
+  // Return empty array if no profile exists
   if (!profile.length) {
     return [];
   }

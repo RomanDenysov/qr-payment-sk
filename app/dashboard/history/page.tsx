@@ -1,4 +1,4 @@
-import { getQrHistory } from '@/app/actions/dashboard';
+import { getRecentQRGenerations } from '@/app/actions/dashboard';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Calendar, Clock, CreditCard, Download, QrCode } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function HistoryPage() {
-  const qrHistory = await getQrHistory();
+  const qrHistory = await getRecentQRGenerations(10);
 
   return (
     <FadeContainer className="space-y-8">
@@ -106,12 +106,12 @@ export default async function HistoryPage() {
                         </div>
                       )}
 
-                      {qr.description && (
+                      {qr.note && (
                         <div className="space-y-1">
                           <span className="text-muted-foreground text-sm">
                             Poznámka:
                           </span>
-                          <p className="text-sm">{qr.description}</p>
+                          <p className="text-sm">{qr.note}</p>
                         </div>
                       )}
                     </div>

@@ -5,6 +5,7 @@ import { profilesTable } from '@/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { eq } from 'drizzle-orm';
+import { createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -62,7 +63,6 @@ export async function createProfile(formData: FormData) {
       .values({
         clerkId: userId,
         businessName: validatedData.businessName,
-        defaultIban: validatedData.defaultIban,
         email,
       })
       .returning();
@@ -102,7 +102,6 @@ export async function createOrUpdateProfile(
         .set({
           businessName: validatedData.businessName,
           email: validatedData.email,
-          defaultIban: validatedData.defaultIban,
           updatedAt: new Date(),
         })
         .where(eq(profilesTable.clerkId, userId))
@@ -119,7 +118,6 @@ export async function createOrUpdateProfile(
         clerkId: userId,
         businessName: validatedData.businessName,
         email: validatedData.email,
-        defaultIban: validatedData.defaultIban,
       })
       .returning();
 
@@ -190,7 +188,7 @@ export async function getUserSubscription() {
   };
 }
 
-export async function hasProfile(): Promise<boolean> {
+export const hasProfile = createSafeActionClient().action(async () => {
   const { userId } = await auth();
 
   if (!userId) {
@@ -209,4 +207,4 @@ export async function hasProfile(): Promise<boolean> {
     console.error('Error checking profile existence:', error);
     return false;
   }
-}
+});

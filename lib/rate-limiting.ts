@@ -2,6 +2,7 @@ import 'server-only';
 
 import db from '@/db';
 import { profilesTable, qrGenerationsTable } from '@/db/schema';
+import { getPeriodBoundaries } from '@/lib/date-utils';
 import { auth } from '@clerk/nextjs/server';
 import { and, count, eq, gte } from 'drizzle-orm';
 import { ProfileNotFoundError, RateLimitError } from './errors';
@@ -13,36 +14,12 @@ import {
 
 // Get start of period based on window
 function getStartOfPeriod(window: string): Date {
-  const now = new Date();
-
-  switch (window) {
-    case '7d': {
-      const weekAgo = new Date(now);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return weekAgo;
-    }
-    case '30d':
-      return new Date(now.getFullYear(), now.getMonth(), 1); // Start of current month
-    default:
-      throw new Error(`Unsupported window: ${window}`);
-  }
+  return getPeriodBoundaries(window as '7d' | '30d').start;
 }
 
 // Get reset date based on window
 function getResetDate(window: string): Date {
-  const now = new Date();
-
-  switch (window) {
-    case '7d': {
-      const nextWeek = new Date(now);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      return nextWeek;
-    }
-    case '30d':
-      return new Date(now.getFullYear(), now.getMonth() + 1, 1); // Start of next month
-    default:
-      throw new Error(`Unsupported window: ${window}`);
-  }
+  return getPeriodBoundaries(window as '7d' | '30d').reset;
 }
 
 // Check usage for authenticated users using Clerk's native billing
@@ -172,9 +149,8 @@ export async function getUserUsageStats(userId: string): Promise<{
 }> {
   const currentUsage = await checkUserUsageLimit(userId);
 
-  // Get daily usage for the last 30 days
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  // Get daily usage for the last 30 days using our utility
+  const { start: thirtyDaysAgo } = getPeriodBoundaries('30d');
 
   const profile = await db
     .select()

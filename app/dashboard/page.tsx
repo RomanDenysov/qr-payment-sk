@@ -1,4 +1,7 @@
-import { getQrHistory, getUserTemplates } from '@/app/actions/dashboard';
+import {
+  getRecentQRGenerations,
+  getUserTemplates,
+} from '@/app/actions/dashboard';
 import { SubscriptionCard } from '@/components/billing/subscription-card';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
@@ -19,7 +22,7 @@ import Link from 'next/link';
 export default async function DashboardPage() {
   const [templates, recentHistory] = await Promise.all([
     getUserTemplates(),
-    getQrHistory(5), // Get last 5 QR generations
+    getRecentQRGenerations(5),
   ]);
 
   return (
@@ -86,7 +89,7 @@ export default async function DashboardPage() {
                           {formatCurrency(item.amount)}
                         </p>
                         <Badge variant="secondary" className="text-xs">
-                          {item.status}
+                          {/* TODO: Add IBAN name */}
                         </Badge>
                       </div>
                     </div>
