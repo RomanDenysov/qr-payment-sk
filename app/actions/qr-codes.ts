@@ -1,14 +1,15 @@
 'use server';
 
 import db from '@/db';
-import { profilesTable, qrGenerationsTable } from '@/db/schema';
+import { businessProfilesTable, qrGenerationsTable } from '@/db/schema';
+import { eurosToCents } from '@/lib/format-utils';
 import { getBySquareQR } from '@/lib/get-bysquare-qr';
 import {
   authActionClient,
   createSuccessResponse,
   publicActionClient,
 } from '@/lib/safe-action';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import QRCode from 'qrcode';
 import { z } from 'zod';
@@ -27,41 +28,34 @@ const qrGenerationSchema = z.object({
     .string()
     .regex(/^\d{1,10}$/, 'Variable symbol must be 1-10 digits')
     .optional(),
+  constantSymbol: z
+    .string()
+    .regex(/^\d{1,10}$/, 'Constant symbol must be 1-10 digits')
+    .optional(),
   paymentNote: z
     .string()
     .max(140, 'Payment note cannot exceed 140 characters')
     .optional(),
-  templateId: z.string().uuid().optional(),
-  templateName: z.string().max(100).optional(),
 });
 
-// Generate unique variable symbol
+// Generate unique variable symbol using database sequence
 async function generateUniqueVariableSymbol(): Promise<string> {
-  const maxAttempts = 10;
+  try {
+    // Use raw SQL to call the sequence
+    const result = await db.execute(
+      sql`SELECT nextval('variable_symbol_seq') as next_val`
+    );
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    // Timestamp + random component for uniqueness
-    const timestamp = Date.now().toString().slice(-6); // Last 6 digits
-    const random = Math.floor(Math.random() * 100)
-      .toString()
-      .padStart(2, '0');
-    const variableSymbol = timestamp + random;
-
-    // Check uniqueness in database
-    const existing = await db
-      .select()
-      .from(qrGenerationsTable)
-      .where(eq(qrGenerationsTable.variableSymbol, BigInt(variableSymbol)))
-      .limit(1);
-
-    if (!existing.length) {
-      return variableSymbol;
+    if (!result.rows || result.rows.length === 0) {
+      throw new Error('No value returned from sequence');
     }
-  }
 
-  throw new Error(
-    'Failed to generate unique variable symbol after 10 attempts'
-  );
+    const row = result.rows[0] as { next_val: number };
+    return row.next_val.toString();
+  } catch (error) {
+    console.error('Failed to generate variable symbol from sequence:', error);
+    throw new Error('Failed to generate unique variable symbol');
+  }
 }
 
 // Authenticated QR generation action
@@ -75,13 +69,11 @@ export const generateQRCodeAuth = authActionClient
     const { userId, usageStatus } = ctx;
 
     // Get user profile
-    const profile = await db
-      .select()
-      .from(profilesTable)
-      .where(eq(profilesTable.clerkId, userId))
-      .limit(1);
+    const profile = await db.query.businessProfilesTable.findFirst({
+      where: eq(businessProfilesTable.clerkId, userId),
+    });
 
-    if (!profile.length) {
+    if (!profile) {
       throw new Error('User profile not found');
     }
 
@@ -112,14 +104,13 @@ export const generateQRCodeAuth = authActionClient
     const qrGeneration = await db
       .insert(qrGenerationsTable)
       .values({
-        userId: profile[0].id,
-        templateId: parsedInput.templateId || null,
-        templateName: parsedInput.templateName || 'One-time payment',
-        amount: parsedInput.amount.toString(),
-        variableSymbol: BigInt(variableSymbol),
+        clerkId: profile.clerkId,
+        templateName: 'One-time payment', // Default template name
+        amount: eurosToCents(parsedInput.amount), // Convert EUR to cents using utility
+        variableSymbol: variableSymbol, // Now a string, no BigInt conversion needed
         qrData,
         iban: parsedInput.iban,
-        description: parsedInput.paymentNote,
+        note: parsedInput.paymentNote,
       })
       .returning();
 
@@ -150,7 +141,7 @@ export const generateQRCodeAnonymous = publicActionClient
     actionName: 'generateQRCodeAnonymous',
     requiresAuth: false,
   })
-  .schema(qrGenerationSchema.omit({ templateId: true, templateName: true }))
+  .schema(qrGenerationSchema)
   .action(async ({ parsedInput }) => {
     // Generate variable symbol
     const variableSymbol =
@@ -203,20 +194,16 @@ export const generateQRFromTemplate = authActionClient
     const { userId } = ctx;
 
     // Get user profile
-    const profile = await db
-      .select()
-      .from(profilesTable)
-      .where(eq(profilesTable.clerkId, userId))
-      .limit(1);
+    const profile = await db.query.businessProfilesTable.findFirst({
+      where: eq(businessProfilesTable.clerkId, userId),
+    });
 
-    if (!profile.length) {
+    if (!profile) {
       throw new Error('User profile not found');
     }
 
     // TODO: Implement template fetching and merging with overrides
     // This would fetch the template and merge with any overrides
-
-    throw new Error('Template-based generation not yet implemented');
   });
 
 // Export types for frontend usage

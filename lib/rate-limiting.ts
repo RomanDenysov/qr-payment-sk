@@ -1,7 +1,7 @@
 import 'server-only';
 
 import db from '@/db';
-import { profilesTable, qrGenerationsTable } from '@/db/schema';
+import { businessProfilesTable, qrGenerationsTable } from '@/db/schema';
 import { getPeriodBoundaries } from '@/lib/date-utils';
 import { auth } from '@clerk/nextjs/server';
 import { and, count, eq, gte } from 'drizzle-orm';
@@ -23,19 +23,18 @@ function getResetDate(window: string): Date {
 }
 
 // Check usage for authenticated users using Clerk's native billing
-export async function checkUserUsageLimit(
-  userId: string
-): Promise<UsageStatus> {
-  const { has } = await auth();
+export async function checkUserUsageLimit(): Promise<UsageStatus> {
+  const { has, userId } = await auth();
 
-  // Get user profile
-  const profile = await db
-    .select()
-    .from(profilesTable)
-    .where(eq(profilesTable.clerkId, userId))
-    .limit(1);
+  if (!userId) {
+    throw new ProfileNotFoundError();
+  }
 
-  if (!profile.length) {
+  const profile = await db.query.businessProfilesTable.findFirst({
+    where: eq(businessProfilesTable.clerkId, userId),
+  });
+
+  if (!profile) {
     throw new ProfileNotFoundError();
   }
 
@@ -60,7 +59,7 @@ export async function checkUserUsageLimit(
     .from(qrGenerationsTable)
     .where(
       and(
-        eq(qrGenerationsTable.userId, profile[0].id),
+        eq(qrGenerationsTable.clerkId, profile.clerkId),
         gte(qrGenerationsTable.generatedAt, periodStart)
       )
     );
@@ -107,7 +106,7 @@ export async function checkAnonymousUsageLimit(
 
   const resetDate = getResetDate(window);
 
-  return {
+  return await {
     allowed: true,
     used: 0, // Placeholder
     remaining: limit,
@@ -118,13 +117,16 @@ export async function checkAnonymousUsageLimit(
 }
 
 // Get user plan details using Clerk's native billing
-export async function getUserPlan(userId: string): Promise<{
+export async function getUserPlan(): Promise<{
   plan: PlanType;
   hasApiAccess: boolean;
   hasWebhooks: boolean;
   hasWhiteLabel: boolean;
 }> {
-  const { has } = await auth();
+  const { has, userId } = await auth();
+  if (!userId) {
+    throw new ProfileNotFoundError();
+  }
 
   let plan: PlanType = 'free';
 
@@ -143,22 +145,26 @@ export async function getUserPlan(userId: string): Promise<{
 }
 
 // Get usage statistics for dashboard
-export async function getUserUsageStats(userId: string): Promise<{
+export async function getUserUsageStats(): Promise<{
   current: UsageStatus;
   monthlyTrend: Array<{ date: string; count: number }>;
 }> {
-  const currentUsage = await checkUserUsageLimit(userId);
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new ProfileNotFoundError();
+  }
+
+  const currentUsage = await checkUserUsageLimit();
 
   // Get daily usage for the last 30 days using our utility
   const { start: thirtyDaysAgo } = getPeriodBoundaries('30d');
 
-  const profile = await db
-    .select()
-    .from(profilesTable)
-    .where(eq(profilesTable.clerkId, userId))
-    .limit(1);
+  const profile = await db.query.businessProfilesTable.findFirst({
+    where: eq(businessProfilesTable.clerkId, userId),
+  });
 
-  if (!profile.length) {
+  if (!profile) {
     return {
       current: currentUsage,
       monthlyTrend: [],
@@ -175,35 +181,6 @@ export async function getUserUsageStats(userId: string): Promise<{
   };
 }
 
-// Check if user has access to specific features based on Clerk billing
-export async function checkFeatureAccess(
-  userId: string,
-  feature: string
-): Promise<boolean> {
-  // TODO: Implement Clerk billing integration to check user's plan
-  // For now, return basic feature access for all registered users
-
-  const basicFeatures = ['basic_qr', 'templates', 'history'];
-
-  // All registered users get basic features
-  if (basicFeatures.includes(feature)) {
-    return true;
-  }
-
-  // Advanced features require plan upgrade (will be implemented with Clerk billing)
-  return false;
-}
-
-// Increment usage counter (for analytics)
-export async function incrementUsageCounter(
-  userId: string,
-  qrGenerationId: string
-): Promise<void> {
-  // This could be used for detailed analytics
-  // For now, QR generations are already tracked in qrGenerationsTable
-  console.log(`Usage incremented for user ${userId}, QR ${qrGenerationId}`);
-}
-
 // Get platform-wide usage statistics
 export async function getPlatformUsageStats(): Promise<{
   totalUsers: number;
@@ -212,7 +189,7 @@ export async function getPlatformUsageStats(): Promise<{
   planDistribution: Record<PlanType, number>;
 }> {
   const [totalUsers, totalQrCodes, monthlyGenerated] = await Promise.all([
-    db.select({ count: count() }).from(profilesTable),
+    db.select({ count: count() }).from(businessProfilesTable),
     db.select({ count: count() }).from(qrGenerationsTable),
     db
       .select({ count: count() })

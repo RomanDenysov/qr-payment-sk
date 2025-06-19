@@ -1,156 +1,69 @@
 'use server';
 
 import db from '@/db';
-import { profilesTable, userIbansTable } from '@/db/schema';
+import { businessProfilesTable } from '@/db/schema';
 import { auth } from '@clerk/nextjs/server';
-import { clerkClient } from '@clerk/nextjs/server';
 import { eq } from 'drizzle-orm';
-import { createSafeActionClient } from 'next-safe-action';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-const profileSchema = z.object({
-  businessName: z.string().min(1).max(200).optional(),
-  email: z.string().email(),
-});
-
-const createProfileSchema = z.object({
-  businessName: z.string().min(1, 'Business name is required').max(200),
+const businessProfileSchema = z.object({
+  businessName: z
+    .string()
+    .min(1, 'Business name is required')
+    .max(200)
+    .optional(),
   // IBAN fields (optional)
-  iban: z.string().optional(),
-  accountName: z.string().optional(),
-  bankName: z.string().optional(),
-  isDefault: z.string().optional(), // Will be 'true' if set
+  businessType: z.enum(['individual', 'company', 'ngo']).optional(),
+  vatNumber: z.string().optional(),
+  registrationNumber: z.string().optional(),
+  defaultCurrency: z.string().optional(),
 });
 
-export async function createProfile(formData: FormData) {
+type BusinessProfileData = z.infer<typeof businessProfileSchema>;
+
+export async function createBusinessProfile(data: BusinessProfileData) {
   const { userId } = await auth();
 
   if (!userId) {
     throw new Error('Unauthorized');
   }
 
-  // Get user email from Clerk
-  const clerk = await clerkClient();
-  const user = await clerk.users.getUser(userId);
-  const email = user.emailAddresses[0]?.emailAddress;
-
-  if (!email) {
-    throw new Error('User email not found');
-  }
-
-  // Extract and validate form data
-  const businessName = formData.get('businessName') as string;
-  const iban = formData.get('iban') as string;
-  const accountName = formData.get('accountName') as string;
-  const bankName = formData.get('bankName') as string;
-  const isDefault = formData.get('isDefault') as string;
-
-  const validatedData = createProfileSchema.parse({
-    businessName,
-    iban: iban || undefined,
-    accountName: accountName || undefined,
-    bankName: bankName || undefined,
-    isDefault: isDefault || undefined,
-  });
+  const validatedData = businessProfileSchema.parse(data);
 
   try {
-    // Check if profile already exists
-    const existingProfile = await db
-      .select()
-      .from(profilesTable)
-      .where(eq(profilesTable.clerkId, userId))
-      .limit(1);
-
-    if (existingProfile.length > 0) {
-      throw new Error('Profile already exists');
-    }
-
     // Create new profile
-    const newProfile = await db
-      .insert(profilesTable)
+    await db
+      .insert(businessProfilesTable)
       .values({
         clerkId: userId,
-        businessName: validatedData.businessName,
-        email,
+        businessName: validatedData.businessName || '',
+        businessType: validatedData.businessType,
+        vatNumber: validatedData.vatNumber,
+        registrationNumber: validatedData.registrationNumber,
+        defaultCurrency: validatedData.defaultCurrency,
       })
-      .returning();
-
-    // If IBAN data is provided, create the first IBAN record
-    if (validatedData.iban) {
-      await db.insert(userIbansTable).values({
-        userId: newProfile[0].id,
-        iban: validatedData.iban,
-        accountName: validatedData.accountName || null,
-        bankName: validatedData.bankName || null,
-        isDefault: validatedData.isDefault === 'true',
-        isActive: true,
+      .onConflictDoUpdate({
+        target: [businessProfilesTable.clerkId],
+        set: {
+          businessName: validatedData.businessName || '',
+          businessType: validatedData.businessType,
+          vatNumber: validatedData.vatNumber,
+          registrationNumber: validatedData.registrationNumber,
+          defaultCurrency: validatedData.defaultCurrency,
+        },
       });
-    }
 
     revalidatePath('/dashboard');
-    return { success: true, profile: newProfile[0] };
+    return { success: true, error: null };
   } catch (error) {
-    console.error('Profile creation error:', error);
-    throw new Error('Failed to create profile');
+    // biome-ignore lint/suspicious/noConsole: <explanation>
+    console.error('Business profile creation error:', error);
+    return { success: false, error: 'Failed to create business profile' };
   }
 }
 
-export async function createOrUpdateProfile(
-  data: z.infer<typeof profileSchema>
-) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error('Unauthorized');
-  }
-
-  // Validate input
-  const validatedData = profileSchema.parse(data);
-
-  try {
-    // Check if profile exists
-    const existingProfile = await db
-      .select()
-      .from(profilesTable)
-      .where(eq(profilesTable.clerkId, userId))
-      .limit(1);
-
-    if (existingProfile.length > 0) {
-      // Update existing profile
-      const updatedProfile = await db
-        .update(profilesTable)
-        .set({
-          businessName: validatedData.businessName,
-          email: validatedData.email,
-          updatedAt: new Date(),
-        })
-        .where(eq(profilesTable.clerkId, userId))
-        .returning();
-
-      revalidatePath('/dashboard');
-      return { success: true, profile: updatedProfile[0] };
-    }
-
-    // Create new profile
-    const newProfile = await db
-      .insert(profilesTable)
-      .values({
-        clerkId: userId,
-        businessName: validatedData.businessName,
-        email: validatedData.email,
-      })
-      .returning();
-
-    revalidatePath('/dashboard');
-    return { success: true, profile: newProfile[0] };
-  } catch (error) {
-    console.error('Profile creation/update error:', error);
-    throw new Error('Failed to create or update profile');
-  }
-}
-
-export async function getProfile() {
+export async function getBusinessProfile() {
   const { userId } = await auth();
 
   if (!userId) {
@@ -158,20 +71,19 @@ export async function getProfile() {
   }
 
   try {
-    const profile = await db
-      .select()
-      .from(profilesTable)
-      .where(eq(profilesTable.clerkId, userId))
-      .limit(1);
+    const profile = await db.query.businessProfilesTable.findFirst({
+      where: eq(businessProfilesTable.clerkId, userId),
+    });
 
-    return profile[0] || null;
+    return profile || null;
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: <explanation>
     console.error('Get profile error:', error);
     return null;
   }
 }
 
-export async function deleteProfile() {
+export async function deleteBusinessProfile() {
   const { userId } = await auth();
 
   if (!userId) {
@@ -179,53 +91,15 @@ export async function deleteProfile() {
   }
 
   try {
-    await db.delete(profilesTable).where(eq(profilesTable.clerkId, userId));
+    await db
+      .delete(businessProfilesTable)
+      .where(eq(businessProfilesTable.clerkId, userId));
 
     revalidatePath('/dashboard');
     return { success: true };
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: <explanation>
     console.error('Profile deletion error:', error);
     throw new Error('Failed to delete profile');
   }
 }
-
-export async function getUserSubscription() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return null;
-  }
-
-  // For now, return a default free plan subscription
-  // TODO: Integrate with Clerk billing to get actual subscription data
-  // This will be replaced with actual Clerk billing API calls
-  return {
-    id: 'mock-subscription',
-    plan: 'free',
-    status: 'active',
-    currentPeriodStart: new Date(),
-    currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-    cancelAtPeriodEnd: false,
-  };
-}
-
-export const hasProfile = createSafeActionClient().action(async () => {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return false;
-  }
-
-  try {
-    const profile = await db
-      .select()
-      .from(profilesTable)
-      .where(eq(profilesTable.clerkId, userId))
-      .limit(1);
-
-    return profile.length > 0;
-  } catch (error) {
-    console.error('Error checking profile existence:', error);
-    return false;
-  }
-});

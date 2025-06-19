@@ -2,8 +2,8 @@
 
 import db from '@/db';
 import {
+  businessProfilesTable,
   paymentTemplatesTable,
-  profilesTable,
   qrGenerationsTable,
 } from '@/db/schema';
 import { unstable_cache } from '@/lib/unstable-cache';
@@ -34,7 +34,7 @@ const calculatePlatformStats = async (): Promise<StatsResponse> => {
         // Total number of registered users
         db
           .select({ count: count() })
-          .from(profilesTable),
+          .from(businessProfilesTable),
 
         // Total number of generated QR codes
         db
@@ -46,10 +46,10 @@ const calculatePlatformStats = async (): Promise<StatsResponse> => {
           .select({ count: count() })
           .from(paymentTemplatesTable),
 
-        // Total revenue from all QR codes (sum of amounts)
+        // Total revenue from all QR codes (sum of amounts converted from cents to euros)
         db
           .select({
-            total: sql<string>`COALESCE(SUM(${qrGenerationsTable.amount}), 0)::text`,
+            total: sql<string>`COALESCE(SUM(${qrGenerationsTable.amount}) / 100.0, 0)::text`,
           })
           .from(qrGenerationsTable),
       ]);
@@ -142,16 +142,3 @@ export const getDetailedStats = unstable_cache(
     revalidate: 900, // 15 minutes - longer cache for more expensive query
   }
 );
-
-/**
- * Invalidate stats cache when data changes
- * Call this after creating users, QR codes, or templates
- */
-export async function invalidateStatsCache(): Promise<void> {
-  const { revalidateTag } = await import('next/cache');
-  revalidateTag('platform-stats');
-  revalidateTag('detailed-platform-stats');
-}
-
-// Formatting utilities moved to @/lib/format-utils.ts
-// This keeps server actions separate from pure utility functions

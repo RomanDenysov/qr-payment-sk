@@ -5,7 +5,7 @@ import {
 } from 'next-safe-action';
 import { z } from 'zod';
 import { ERROR_CODES } from './errors';
-import { checkFeatureAccess, checkUserUsageLimit } from './rate-limiting';
+import { checkUserUsageLimit } from './rate-limiting';
 
 // Custom error classes for better error handling
 export class ActionError extends Error {
@@ -108,21 +108,7 @@ export const authActionClient = actionClient.use(async ({ next, metadata }) => {
   // If user is authenticated, check rate limits
   if (userId) {
     try {
-      const usageStatus = await checkUserUsageLimit(userId);
-
-      // Check if specific feature is required
-      if (metadata?.requiredFeature) {
-        const hasAccess = await checkFeatureAccess(
-          userId,
-          metadata.requiredFeature
-        );
-        if (!hasAccess) {
-          throw new FeatureNotAvailableError(
-            metadata.requiredFeature,
-            'starter' // You can make this dynamic based on feature
-          );
-        }
-      }
+      const usageStatus = await checkUserUsageLimit();
 
       return next({
         ctx: {

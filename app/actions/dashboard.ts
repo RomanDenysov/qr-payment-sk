@@ -2,8 +2,8 @@
 
 import db from '@/db';
 import {
+  businessProfilesTable,
   paymentTemplatesTable,
-  profilesTable,
   qrGenerationsTable,
 } from '@/db/schema';
 import { getMonthlyBoundaries } from '@/lib/date-utils';
@@ -20,14 +20,12 @@ export async function getUserStats() {
   }
 
   // Get user profile
-  const profile = await db
-    .select()
-    .from(profilesTable)
-    .where(eq(profilesTable.clerkId, userId))
-    .limit(1);
+  const businessProfile = await db.query.businessProfilesTable.findFirst({
+    where: eq(businessProfilesTable.clerkId, userId),
+  });
 
   // Return default stats if no profile exists
-  if (!profile.length) {
+  if (!businessProfile) {
     return {
       currentMonthQRs: 0,
       totalQRs: 0,
@@ -35,8 +33,6 @@ export async function getUserStats() {
       growthPercentage: 0,
     };
   }
-
-  const profileId = profile[0].id;
 
   // Get date boundaries using our utility
   const { currentMonth, lastMonth } = getMonthlyBoundaries();
@@ -47,7 +43,7 @@ export async function getUserStats() {
     .from(qrGenerationsTable)
     .where(
       and(
-        eq(qrGenerationsTable.userId, profileId),
+        eq(qrGenerationsTable.clerkId, userId),
         gte(qrGenerationsTable.generatedAt, currentMonth.start)
       )
     );
@@ -58,7 +54,7 @@ export async function getUserStats() {
     .from(qrGenerationsTable)
     .where(
       and(
-        eq(qrGenerationsTable.userId, profileId),
+        eq(qrGenerationsTable.clerkId, userId),
         gte(qrGenerationsTable.generatedAt, lastMonth.start),
         lt(qrGenerationsTable.generatedAt, lastMonth.end)
       )
@@ -68,7 +64,7 @@ export async function getUserStats() {
   const [totalQRs] = await db
     .select({ count: count() })
     .from(qrGenerationsTable)
-    .where(eq(qrGenerationsTable.userId, profileId));
+    .where(eq(qrGenerationsTable.clerkId, userId));
 
   // Get active templates count
   const [activeTemplates] = await db
@@ -76,7 +72,7 @@ export async function getUserStats() {
     .from(paymentTemplatesTable)
     .where(
       and(
-        eq(paymentTemplatesTable.userId, profileId),
+        eq(paymentTemplatesTable.clerkId, userId),
         eq(paymentTemplatesTable.isActive, true)
       )
     );
@@ -100,13 +96,13 @@ export async function getUserStats() {
 
 // Cached function that only handles DB operations
 const getCachedRecentQRGenerations = unstable_cache(
-  async (profileId: string, limit: number) => {
-    return db.query.qrGenerationsTable.findMany({
+  async (userId: string, limit: number) => {
+    return await db.query.qrGenerationsTable.findMany({
       with: {
         template: true,
         userIban: true,
       },
-      where: eq(qrGenerationsTable.userId, profileId),
+      where: eq(qrGenerationsTable.clerkId, userId),
       orderBy: desc(qrGenerationsTable.generatedAt),
       limit: limit || 10,
     });
@@ -125,20 +121,7 @@ export async function getRecentQRGenerations(limit: number) {
     throw new Error('Unauthorized');
   }
 
-  // Get user profile
-  const profile = await db
-    .select()
-    .from(profilesTable)
-    .where(eq(profilesTable.clerkId, userId))
-    .limit(1);
-
-  // Return empty array if no profile exists
-  if (!profile.length) {
-    return [];
-  }
-
-  // Call the cached function with profileId
-  return getCachedRecentQRGenerations(profile[0].id, limit);
+  return getCachedRecentQRGenerations(userId, limit);
 }
 
 // Get usage statistics for current period
@@ -155,15 +138,8 @@ export async function getCurrentUsageStats() {
     };
   }
 
-  // Get user profile
-  const profile = await db
-    .select()
-    .from(profilesTable)
-    .where(eq(profilesTable.clerkId, userId))
-    .limit(1);
-
   // Return default usage stats if no profile exists
-  if (!profile.length) {
+  if (!userId) {
     const { nextReset } = getMonthlyBoundaries();
     return {
       used: 0,
@@ -182,7 +158,7 @@ export async function getCurrentUsageStats() {
     .from(qrGenerationsTable)
     .where(
       and(
-        eq(qrGenerationsTable.userId, profile[0].id),
+        eq(qrGenerationsTable.clerkId, userId),
         gte(qrGenerationsTable.generatedAt, currentMonth.start)
       )
     );
@@ -204,35 +180,28 @@ export async function getCurrentUsageStats() {
   };
 }
 
+export const getCachedUserTemplates = unstable_cache(
+  async (userId: string) => {
+    return await db.query.paymentTemplatesTable.findMany({
+      where: and(
+        eq(paymentTemplatesTable.clerkId, userId),
+        eq(paymentTemplatesTable.isActive, true)
+      ),
+      orderBy: desc(paymentTemplatesTable.usageCount),
+    });
+  },
+  ['user-templates'],
+  {
+    revalidate: 60,
+  }
+);
+
 export async function getUserTemplates() {
   const { userId } = await auth();
 
   if (!userId) {
-    throw new Error('Unauthorized');
-  }
-
-  // Get user profile
-  const profile = await db
-    .select()
-    .from(profilesTable)
-    .where(eq(profilesTable.clerkId, userId))
-    .limit(1);
-
-  // Return empty array if no profile exists
-  if (!profile.length) {
     return [];
   }
 
-  const templates = await db
-    .select()
-    .from(paymentTemplatesTable)
-    .where(
-      and(
-        eq(paymentTemplatesTable.userId, profile[0].id),
-        eq(paymentTemplatesTable.isActive, true)
-      )
-    )
-    .orderBy(desc(paymentTemplatesTable.usageCount));
-
-  return templates;
+  return getCachedUserTemplates(userId);
 }

@@ -84,3 +84,32 @@ export function validateSlovakIban(iban: string): boolean {
   // The library returns null for valid IBANs, or an object with errors for invalid ones
   return validationResult === null;
 }
+
+/**
+ * Convert euros to cents for database storage
+ * @param euros - Amount in euros (e.g., 25.50)
+ * @returns Amount in cents (e.g., 2550)
+ */
+export function eurosToCents(euros: number): number {
+  return Math.round(euros * 100);
+}
+
+/**
+ * Convert cents to euros for display
+ * @param cents - Amount in cents (e.g., 2550)
+ * @returns Amount in euros (e.g., 25.50)
+ */
+export function centsToEuros(cents: number): number {
+  return cents / 100;
+}
+
+/**
+ * Format amount from cents to currency string
+ * @param cents - Amount in cents
+ * @param locale - Locale for formatting (default: 'sk-SK')
+ * @returns Formatted currency string (e.g., "25,50 €")
+ */
+export function formatAmountFromCents(cents: number, locale = 'sk-SK'): string {
+  const euros = centsToEuros(cents);
+  return formatCurrency(euros.toString());
+}
