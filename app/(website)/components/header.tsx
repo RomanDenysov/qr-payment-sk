@@ -2,7 +2,7 @@
 
 import { AnimatedBackground } from '@/components/motion-primitives/animated-background';
 import { Logo, LogoSmall } from '@/components/shared/logo';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -12,18 +12,9 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
-import { Skeleton } from '@/components/ui/skeleton';
-import useScroll from '@/hooks/useScroll';
+import useScroll from '@/hooks/use-scroll';
 import { cn } from '@/lib/utils';
-import {
-  ClerkLoading,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from '@clerk/nextjs';
-import { LogInIcon, MenuIcon, UserPlusIcon } from 'lucide-react';
+import { LogInIcon, MenuIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -42,7 +33,7 @@ const navItems = [
   },
 ];
 
-export function Header() {
+export function Header({ isSignedIn }: { isSignedIn: boolean }) {
   const scrolled = useScroll(15);
 
   return (
@@ -57,7 +48,7 @@ export function Header() {
       >
         <div className="flex h-16 items-center justify-between">
           <div className="flex flex-1 items-center justify-start gap-2">
-            <MobileMenu />
+            <MobileMenu isSignedIn={isSignedIn} />
 
             <div className="transition-opacity duration-200 hover:opacity-90">
               <Logo />
@@ -91,7 +82,28 @@ export function Header() {
           </nav>
 
           <div className="flex flex-1 items-center justify-end gap-3">
-            <AuthButtons />
+            {isSignedIn ? (
+              <Link
+                href="/dashboard"
+                className={cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  'hidden border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex'
+                )}
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/autorizacia"
+                className={cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  'hidden border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex'
+                )}
+              >
+                <LogInIcon className="size-4" />
+                Prihlásiť sa
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -99,66 +111,7 @@ export function Header() {
   );
 }
 
-function AuthButtons() {
-  return (
-    <>
-      <SignedOut>
-        <div className="flex items-center gap-2">
-          <SignInButton>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex"
-            >
-              <LogInIcon className="size-4" />
-              Prihlásiť sa
-            </Button>
-          </SignInButton>
-          <SignUpButton>
-            <Button
-              size="sm"
-              className="bg-gradient-to-r from-primary to-primary/75 transition-all duration-200 hover:from-primary/90 hover:to-primary"
-            >
-              <UserPlusIcon className="size-4" />
-              Registrovať sa
-            </Button>
-          </SignUpButton>
-        </div>
-      </SignedOut>
-
-      <SignedIn>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className={cn(
-              buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'hidden border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex'
-            )}
-          >
-            Dashboard
-          </Link>
-
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: '!size-8 !rounded-lg',
-              },
-            }}
-          />
-        </div>
-      </SignedIn>
-
-      <ClerkLoading>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-8 w-24 rounded-md" />
-          <Skeleton className="h-8 w-8 rounded-full" />
-        </div>
-      </ClerkLoading>
-    </>
-  );
-}
-
-function MobileMenu() {
+function MobileMenu({ isSignedIn }: { isSignedIn: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -198,34 +151,28 @@ function MobileMenu() {
 
           <DrawerFooter>
             <div className="space-y-3">
-              <SignedOut>
-                <SignInButton>
-                  <Button variant="outline" className="w-full">
-                    <LogInIcon className="size-4" />
-                    Prihlásiť sa
-                  </Button>
-                </SignInButton>
-                <SignUpButton>
-                  <Button className="w-full bg-gradient-to-r from-primary to-primary/75">
-                    <UserPlusIcon className="size-4" />
-                    Registrovať sa
-                  </Button>
-                </SignUpButton>
-              </SignedOut>
-
-              <SignedIn>
-                <Button variant="outline" className="w-full" asChild>
-                  <Link href="/dashboard">Dashboard</Link>
-                </Button>
-                <div className="flex items-center justify-center pt-2">
-                  <UserButton />
-                </div>
-              </SignedIn>
-
-              <ClerkLoading>
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </ClerkLoading>
+              {isSignedIn ? (
+                <Link
+                  href="/dashboard"
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'sm' }),
+                    'hidden w-full border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex'
+                  )}
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <Link
+                  href="/autorizacia"
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'sm' }),
+                    'hidden w-full border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex'
+                  )}
+                >
+                  <LogInIcon className="size-4" />
+                  Prihlásiť sa
+                </Link>
+              )}
             </div>
           </DrawerFooter>
         </div>

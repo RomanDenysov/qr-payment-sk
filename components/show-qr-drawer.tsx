@@ -8,7 +8,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import { useQrCodeActions } from '@/hooks/useQrCodeActions';
+import { useQrCodeActions } from '@/hooks/use-qr-code-actions';
 import {
   CheckCircleIcon,
   CopyIcon,

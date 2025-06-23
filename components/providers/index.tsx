@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import dynamic from 'next/dynamic';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Provider as WBProvider } from 'react-wrap-balancer';
 import { Toaster } from '../ui/sonner';
 import { ThemeProvider } from './theme-provider';
@@ -15,16 +16,18 @@ const DynamicClerkClientProvider = dynamic(() =>
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <DynamicClerkClientProvider>
+    <NuqsAdapter>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        {/* <DynamicClerkClientProvider> */}
         <WBProvider>{children}</WBProvider>
         <Toaster />
-      </DynamicClerkClientProvider>
-    </ThemeProvider>
+        {/* </DynamicClerkClientProvider> */}
+      </ThemeProvider>
+    </NuqsAdapter>
   );
 }
