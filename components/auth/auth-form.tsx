@@ -54,7 +54,7 @@ export function AuthForm() {
   };
 
   return (
-    <div className="mx-auto size-full max-w-md">
+    <div className="mx-auto size-full max-w-xs sm:max-w-sm md:max-w-md">
       <div className="space-y-6">
         <div className="flex flex-col gap-1 text-center">
           <h1 className="font-bold text-3xl leading-none">
@@ -90,29 +90,31 @@ export function AuthForm() {
           </FadeDiv>
         </div>
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="size-full space-y-4"
-          >
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full">
-              {authState === 'prihlasenie' ? 'Prihlásiť sa' : 'Registrácia'}
-            </Button>
-          </form>
-        </Form>
+        <FadeDiv>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="size-full space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full">
+                {authState === 'prihlasenie' ? 'Prihlásiť sa' : 'Registrácia'}
+              </Button>
+            </form>
+          </Form>
+        </FadeDiv>
         <FadeDiv className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-border after:border-t">
           <span className="relative z-10 bg-background px-2 text-muted-foreground">
             Or

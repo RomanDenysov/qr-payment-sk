@@ -1,8 +1,13 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
-export function Logo() {
+export function Logo({
+  children,
+  href = '/',
+}: { children?: ReactNode; href?: string }) {
   return (
-    <Link href="/" aria-label="domov">
+    <Link href={href} aria-label="domov" className="flex items-center gap-1">
+      {children}
       <span className="sr-only">QR Platby Logo</span>
       <div className="flex items-center gap-1">
         <div className="flex size-8 items-center justify-center rounded-md bg-primary">
@@ -16,9 +21,13 @@ export function Logo() {
   );
 }
 
-export function LogoSmall() {
+export function LogoSmall({
+  children,
+  href = '/',
+}: { children: ReactNode; href?: string }) {
   return (
-    <Link href="/" aria-label="domov">
+    <Link href={href} aria-label="domov" className="flex items-center gap-1">
+      {children}
       <span className="sr-only">QR Platby Logo</span>
       <div className="flex items-center gap-1">
         <div className="flex size-6 items-center justify-center rounded-md bg-primary">
