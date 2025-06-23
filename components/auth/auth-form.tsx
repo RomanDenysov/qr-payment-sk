@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQueryState } from 'nuqs';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
+import { FadeDiv, FadeSpan } from '../motion/fade';
 import { Button } from '../ui/button';
 import {
   Form,
@@ -56,9 +57,13 @@ export function AuthForm() {
     <div className="mx-auto size-full max-w-md">
       <div className="space-y-6">
         <div className="flex flex-col gap-1 text-center">
-          <h1 className="font-bold text-3xl leading-none">{title}</h1>
-          <p className="text-lg text-muted-foreground">{description}</p>
-          <div className="inline-flex items-center justify-center gap-1">
+          <h1 className="font-bold text-3xl leading-none">
+            <FadeSpan>{title}</FadeSpan>
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            <FadeSpan>{description}</FadeSpan>
+          </p>
+          <FadeDiv className="inline-flex items-center justify-center gap-1">
             {authState === 'prihlasenie' ? (
               <p className="text-muted-foreground text-sm">
                 Nemáte účet?{' '}
@@ -82,7 +87,7 @@ export function AuthForm() {
                 </button>
               </p>
             )}
-          </div>
+          </FadeDiv>
         </div>
 
         <Form {...form}>
@@ -108,12 +113,12 @@ export function AuthForm() {
             </Button>
           </form>
         </Form>
-        <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-border after:border-t">
+        <FadeDiv className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-border after:border-t">
           <span className="relative z-10 bg-background px-2 text-muted-foreground">
             Or
           </span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        </FadeDiv>
+        <FadeDiv className="grid gap-4 sm:grid-cols-2">
           <Button variant="outline" type="button" className="w-full">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
               <title>Apple</title>
@@ -134,12 +139,12 @@ export function AuthForm() {
             </svg>
             Pokračovať s Google
           </Button>
-        </div>
-        <div className="text-balance text-center text-muted-foreground text-xs *:[a]:underline *:[a]:underline-offset-4 *:[a]:hover:text-primary">
+        </FadeDiv>
+        <FadeDiv className="text-balance text-center text-muted-foreground text-xs *:[a]:underline *:[a]:underline-offset-4 *:[a]:hover:text-primary">
           By clicking continue, you agree to our{' '}
           <Link href="/pravne/obchodne-podmienky">Obchodné podmienky</Link> a{' '}
           <Link href="/pravne/ochrana-sukromia">Ochrana súkromia</Link>.
-        </div>
+        </FadeDiv>
       </div>
     </div>
   );

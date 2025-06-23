@@ -1,3 +1,4 @@
+import { FadeContainer } from '@/components/motion/fade';
 import { Logo } from '@/components/shared/logo';
 import { ChevronLeftIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -29,9 +30,9 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
       {/* <AuthDecorator> */}
       <div className="p-4 lg:p-8">
-        <div className="mx-auto flex w-full max-w-[400px] flex-col justify-center space-y-6">
+        <FadeContainer className="mx-auto flex w-full max-w-[400px] flex-col justify-center space-y-6">
           {children}
-        </div>
+        </FadeContainer>
       </div>
       {/* </AuthDecorator> */}
     </main>
