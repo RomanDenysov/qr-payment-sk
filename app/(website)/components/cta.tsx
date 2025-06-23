@@ -84,7 +84,7 @@ export function CTA() {
 }
 
 const CTADecorator = ({ children }: { children: ReactNode }) => (
-  <div className="relative mx-auto h-auto w-full max-w-7xl duration-200 [--color-border:color-mix(in_oklab,var(--color-zinc-950)8%,transparent)] group-hover:bg-white/5 dark:group-hover:bg-white/5 group-hover:[--color-border:color-mix(in_oklab,var(--color-zinc-950)15%,transparent)] dark:[--color-border:color-mix(in_oklab,var(--color-white)12%,transparent)] dark:group-hover:[--color-border:color-mix(in_oklab,var(--color-white)18%,transparent)]">
+  <div className="relative mx-auto h-auto w-full max-w-6xl duration-200 [--color-border:color-mix(in_oklab,var(--color-zinc-950)8%,transparent)] group-hover:bg-white/5 dark:group-hover:bg-white/5 group-hover:[--color-border:color-mix(in_oklab,var(--color-zinc-950)15%,transparent)] dark:[--color-border:color-mix(in_oklab,var(--color-white)12%,transparent)] dark:group-hover:[--color-border:color-mix(in_oklab,var(--color-white)18%,transparent)]">
     {/* Grid pattern background */}
     <div
       aria-hidden
@@ -93,7 +93,7 @@ const CTADecorator = ({ children }: { children: ReactNode }) => (
     {/* Radial gradient overlay to fade edges */}
     <div
       aria-hidden
-      className="absolute inset-0 rounded-xl bg-radial from-transparent via-transparent to-80% to-background"
+      className="absolute inset-0 rounded-xl bg-radial from-transparent via-transparent to-75% to-background"
     />
     {/* Subtle highlight in center */}
     <div
