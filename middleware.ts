@@ -1,19 +1,28 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { headers } from 'next/headers';
+import { type NextRequest, NextResponse } from 'next/server';
+import { auth } from './lib/auth';
 
-const publicRoutes = createRouteMatcher([
+const publicRoutes = [
   '/',
   '/api/v1/qr/generate',
   '/prihlasenie(.*)',
   '/registracia(.*)',
   '/pravne(.*)',
-]);
-const apiRoutes = createRouteMatcher(['/api/(.*)']);
+];
 
-export default clerkMiddleware(async (auth, req) => {
-  if (!publicRoutes(req)) {
-    await auth.protect();
+const middleware = async (request: NextRequest) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session && !publicRoutes.includes(request.nextUrl.pathname)) {
+    return NextResponse.redirect(new URL('/prihlasenie', request.url));
   }
-});
+
+  return NextResponse.next();
+};
+
+export default middleware;
 
 export const config = {
   matcher: [

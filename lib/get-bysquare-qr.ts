@@ -1,20 +1,21 @@
 import 'server-only';
+
 import { CurrencyCode, PaymentOptions, encode } from 'bysquare';
 
 const currentCurrency = CurrencyCode.EUR;
 const currentPaymentOption = PaymentOptions.DirectDebit;
 
-export async function getBySquareQR(data: {
+export function getBySquareQR(data: {
   iban: string;
   amount: number;
   variableSymbol: string;
   paymentNote?: string;
-}) {
+}): string {
   try {
     // Clean IBAN by removing spaces and converting to uppercase
     const cleanIban = data.iban.replace(/\s+/g, '').toUpperCase();
 
-    return await encode({
+    return encode({
       payments: [
         {
           type: currentPaymentOption,

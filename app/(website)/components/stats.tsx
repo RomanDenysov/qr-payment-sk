@@ -1,4 +1,4 @@
-import { getPlatformStats } from '@/app/actions/stats';
+import { getPlatformStatsAction } from '@/app/actions/analytics';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
 import { formatCurrency, formatLargeNumber } from '@/lib/format-utils';
 import type { ReactNode } from 'react';
@@ -6,8 +6,7 @@ import type { ReactNode } from 'react';
 const getStatItems = (stats: {
   totalUsers: number;
   totalQrCodes: number;
-  totalTemplates: number;
-  totalRevenue: string;
+  averageRevenue: string;
 }) => [
   {
     title: 'Aktívni používatelia',
@@ -20,19 +19,14 @@ const getStatItems = (stats: {
     subtitle: 'celkovo',
   },
   {
-    title: 'Platobné šablóny',
-    value: formatLargeNumber(stats.totalTemplates ?? 0),
-    subtitle: 'vytvorených',
-  },
-  {
-    title: 'Celkový obrat',
-    value: formatCurrency(stats.totalRevenue ?? '0'),
-    subtitle: 'spracovaný',
+    title: 'Priemerná hodnota',
+    value: formatCurrency(stats.averageRevenue ?? '0'),
+    subtitle: 'na QR kód',
   },
 ];
 
 export async function Stats() {
-  const statsResponse = await getPlatformStats();
+  const statsResponse = await getPlatformStatsAction();
 
   // Handle error state
   if (!statsResponse.success || !statsResponse.data) {
@@ -57,7 +51,7 @@ export async function Stats() {
       id="stats"
       className="mx-auto w-full px-4 py-20 md:px-6"
     >
-      <FadeContainer className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
+      <FadeContainer className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
         {statItems.map((stat, i) => (
           <FadeDiv key={`${stat.title}-${i}`}>
             <StatCard

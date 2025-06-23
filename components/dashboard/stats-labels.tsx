@@ -1,26 +1,35 @@
-import { getUserStats } from '@/app/actions/dashboard';
+import { getUserStatsAction } from '@/app/actions/analytics';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
-import { formatLargeNumber } from '@/lib/format-utils';
+import { formatCurrency, formatLargeNumber } from '@/lib/format-utils';
 
+/**
+ * Simple user dashboard stats with proper animations
+ */
 export async function StatsLabels() {
-  const stats = await getUserStats();
+  const result = await getUserStatsAction();
+
+  if (result.serverError || !result.data) {
+    return (
+      <div className="py-10 text-center text-muted-foreground">
+        Štatistiky sa nepodarilo načítať.
+      </div>
+    );
+  }
+
+  const stats = result.data;
 
   const statItems = [
     {
       title: 'Celkovo QR kódov',
-      value: formatLargeNumber(stats.totalQRs),
+      value: formatLargeNumber(stats.totalQrCodes),
     },
     {
-      title: 'Tento mesiac',
-      value: formatLargeNumber(stats.currentMonthQRs),
+      title: 'Priemerná hodnota',
+      value: formatCurrency(stats.averageRevenue.toString()),
     },
     {
       title: 'Šablóny',
-      value: formatLargeNumber(stats.activeTemplates),
-    },
-    {
-      title: 'Rast',
-      value: `${stats.growthPercentage}%`,
+      value: formatLargeNumber(stats.totalTemplates),
     },
   ];
 

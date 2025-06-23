@@ -2,9 +2,10 @@
 
 import db from '@/db';
 import { businessProfilesTable } from '@/db/schema';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 
 const businessProfileSchema = z.object({
@@ -23,9 +24,11 @@ const businessProfileSchema = z.object({
 type BusinessProfileData = z.infer<typeof businessProfileSchema>;
 
 export async function createBusinessProfile(data: BusinessProfileData) {
-  const { userId } = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  if (!userId) {
+  if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
 
@@ -36,7 +39,7 @@ export async function createBusinessProfile(data: BusinessProfileData) {
     await db
       .insert(businessProfilesTable)
       .values({
-        clerkId: userId,
+        userId: session.user.id,
         businessName: validatedData.businessName || '',
         businessType: validatedData.businessType,
         vatNumber: validatedData.vatNumber,
@@ -44,7 +47,7 @@ export async function createBusinessProfile(data: BusinessProfileData) {
         defaultCurrency: validatedData.defaultCurrency,
       })
       .onConflictDoUpdate({
-        target: [businessProfilesTable.clerkId],
+        target: [businessProfilesTable.userId],
         set: {
           businessName: validatedData.businessName || '',
           businessType: validatedData.businessType,
@@ -64,15 +67,17 @@ export async function createBusinessProfile(data: BusinessProfileData) {
 }
 
 export async function getBusinessProfile() {
-  const { userId } = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  if (!userId) {
+  if (!session?.user?.id) {
     return null;
   }
 
   try {
     const profile = await db.query.businessProfilesTable.findFirst({
-      where: eq(businessProfilesTable.clerkId, userId),
+      where: eq(businessProfilesTable.userId, session.user.id),
     });
 
     return profile || null;
@@ -84,16 +89,18 @@ export async function getBusinessProfile() {
 }
 
 export async function deleteBusinessProfile() {
-  const { userId } = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  if (!userId) {
+  if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }
 
   try {
     await db
       .delete(businessProfilesTable)
-      .where(eq(businessProfilesTable.clerkId, userId));
+      .where(eq(businessProfilesTable.userId, session.user.id));
 
     revalidatePath('/dashboard');
     return { success: true };

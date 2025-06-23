@@ -1,6 +1,8 @@
 import { relations } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
+  date,
   index,
   integer,
   pgSequence,
@@ -13,6 +15,74 @@ import {
 
 const createTable = pgTableCreator((name) => `sk_${name}`);
 
+export const usersTable = createTable('user', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified')
+    .$defaultFn(() => false)
+    .notNull(),
+  image: text('image'),
+  createdAt: timestamp('created_at')
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .notNull(),
+});
+
+export const sessionsTable = createTable('session', {
+  id: text('id').primaryKey(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: text('user_id')
+    .notNull()
+    .references(() => usersTable.id, { onDelete: 'cascade' }),
+});
+
+export const accountsTable = createTable('account', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => usersTable.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+export const verificationsTable = createTable('verification', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').$defaultFn(
+    () => /* @__PURE__ */ new Date()
+  ),
+  updatedAt: timestamp('updated_at').$defaultFn(
+    () => /* @__PURE__ */ new Date()
+  ),
+});
+
+// Better Auth rate limiting table
+export const rateLimitTable = createTable('rate_limit', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull(),
+  count: integer('count').notNull(),
+  lastRequest: bigint('last_request', { mode: 'bigint' }).notNull(),
+});
+
 // Variable symbol sequence for generating unique payment identifiers
 // Starts at 10000000 (8 digits) and can go up to 9999999999 (10 digits)
 export const variableSymbolSequence = pgSequence('variable_symbol_seq', {
@@ -22,32 +92,36 @@ export const variableSymbolSequence = pgSequence('variable_symbol_seq', {
 });
 
 // Optional business profiles - only created when users need business features
-// This stores data that can't be stored in Clerk (preferences, business settings, etc.)
+// This stores data that can't be stored in Better Auth (preferences, business settings, etc.)
 export const businessProfilesTable = createTable(
   'business_profiles',
   {
     id: uuid().primaryKey().defaultRandom(),
-    clerkId: varchar('clerk_id', { length: 100 }).unique().notNull(), // Direct reference to Clerk user
+    userId: text('user_id')
+      .notNull()
+      .references(() => usersTable.id, { onDelete: 'cascade' }),
     businessName: varchar('business_name', { length: 200 }).notNull(),
     businessType: varchar('business_type', { length: 50 }), // 'individual', 'company', 'ngo'
     vatNumber: varchar('vat_number', { length: 20 }), // Slovak IČ DPH
     registrationNumber: varchar('registration_number', { length: 20 }), // Slovak IČO
 
-    // Preferences that can't be stored in Clerk
+    // Preferences that can't be stored in Better Auth
     defaultCurrency: varchar('default_currency', { length: 3 }).default('EUR'),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [index('idx_business_profiles_clerk_id').on(table.clerkId)]
+  (table) => [index('idx_business_profiles_user_id').on(table.userId)]
 );
 
-// User IBANs - directly reference Clerk user ID
+// User IBANs - reference Better Auth user ID
 export const userIbansTable = createTable(
   'user_ibans',
   {
     id: uuid().primaryKey().defaultRandom(),
-    clerkId: varchar('clerk_id', { length: 100 }).notNull(), // Direct reference to Clerk user
+    userId: text('user_id')
+      .notNull()
+      .references(() => usersTable.id, { onDelete: 'cascade' }),
     iban: varchar('iban', { length: 34 }).notNull(), // Slovak IBAN format
     bankName: varchar('bank_name', { length: 100 }), // e.g., "VÚB Banka", "Slovenská sporiteľňa"
     accountName: varchar('account_name', { length: 100 }), // e.g., "Business Account", "Personal"
@@ -57,17 +131,19 @@ export const userIbansTable = createTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
-    index('idx_user_ibans_clerk_id_active').on(table.clerkId, table.isActive),
-    index('idx_user_ibans_clerk_id_default').on(table.clerkId, table.isDefault),
+    index('idx_user_ibans_user_id_active').on(table.userId, table.isActive),
+    index('idx_user_ibans_user_id_default').on(table.userId, table.isDefault),
   ]
 );
 
-// Payment templates - directly reference Clerk user ID
+// Payment templates - reference Better Auth user ID
 export const paymentTemplatesTable = createTable(
   'payment_templates',
   {
     id: uuid().primaryKey().defaultRandom(),
-    clerkId: varchar('clerk_id', { length: 100 }).notNull(), // Direct reference to Clerk user
+    userId: text('user_id')
+      .notNull()
+      .references(() => usersTable.id, { onDelete: 'cascade' }),
     sortOrder: integer('sort_order').default(0).notNull(),
     name: varchar('name', { length: 100 }).notNull(),
     amount: integer('amount').notNull(), // Amount in cents (e.g. 2550 = €25.50)
@@ -83,20 +159,22 @@ export const paymentTemplatesTable = createTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
-    index('idx_payment_templates_clerk_id_active').on(
-      table.clerkId,
+    index('idx_payment_templates_user_id_active').on(
+      table.userId,
       table.isActive
     ),
     index('idx_payment_templates_usage_count').on(table.usageCount),
   ]
 );
 
-// QR generations - directly reference Clerk user ID
+// QR generations - reference Better Auth user ID
 export const qrGenerationsTable = createTable(
   'qr_generations',
   {
     id: uuid().primaryKey().defaultRandom(),
-    clerkId: varchar('clerk_id', { length: 100 }).notNull(), // Direct reference to Clerk user
+    userId: text('user_id')
+      .notNull()
+      .references(() => usersTable.id, { onDelete: 'cascade' }),
     templateId: uuid('template_id').references(() => paymentTemplatesTable.id, {
       onDelete: 'set null',
     }),
@@ -114,8 +192,8 @@ export const qrGenerationsTable = createTable(
     generatedAt: timestamp('generated_at').defaultNow().notNull(),
   },
   (table) => [
-    index('idx_qr_generations_clerk_id_date').on(
-      table.clerkId,
+    index('idx_qr_generations_user_id_date').on(
+      table.userId,
       table.generatedAt
     ),
     index('idx_qr_generations_variable_symbol').on(table.variableSymbol),
@@ -124,10 +202,74 @@ export const qrGenerationsTable = createTable(
   ]
 );
 
+// Analytics tables - reference Better Auth user ID
+export const dailyUserStatsTable = createTable(
+  'daily_user_stats',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => usersTable.id, { onDelete: 'cascade' }),
+    date: date('date').notNull(),
+    qrCodesGenerated: integer('qr_codes_generated').default(0).notNull(),
+    templatesCreated: integer('templates_created').default(0).notNull(),
+    templatesUsed: integer('templates_used').default(0).notNull(),
+    revenue: integer('revenue').default(0).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_daily_user_stats_user_date').on(table.userId, table.date),
+  ]
+);
+
+export const platformStatsTable = createTable(
+  'platform_stats',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    date: date('date').notNull().unique(),
+    qrCodesGenerated: integer('qr_codes_generated').default(0).notNull(),
+    templatesCreated: integer('templates_created').default(0).notNull(),
+    templatesUsed: integer('templates_used').default(0).notNull(),
+    revenue: integer('revenue').default(0).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_platform_stats_date').on(table.date)]
+);
+
 // Define relationships for Drizzle ORM
+export const usersRelations = relations(usersTable, ({ many }) => ({
+  sessions: many(sessionsTable),
+  accounts: many(accountsTable),
+  businessProfiles: many(businessProfilesTable),
+  ibans: many(userIbansTable),
+  paymentTemplates: many(paymentTemplatesTable),
+  qrGenerations: many(qrGenerationsTable),
+  dailyStats: many(dailyUserStatsTable),
+}));
+
+export const sessionsRelations = relations(sessionsTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [sessionsTable.userId],
+    references: [usersTable.id],
+  }),
+}));
+
+export const accountsRelations = relations(accountsTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [accountsTable.userId],
+    references: [usersTable.id],
+  }),
+}));
+
 export const businessProfilesRelations = relations(
   businessProfilesTable,
-  ({ many }) => ({
+  ({ one, many }) => ({
+    user: one(usersTable, {
+      fields: [businessProfilesTable.userId],
+      references: [usersTable.id],
+    }),
     paymentTemplates: many(paymentTemplatesTable),
     qrGenerations: many(qrGenerationsTable),
     ibans: many(userIbansTable),
@@ -137,9 +279,13 @@ export const businessProfilesRelations = relations(
 export const userIbansRelations = relations(
   userIbansTable,
   ({ one, many }) => ({
+    user: one(usersTable, {
+      fields: [userIbansTable.userId],
+      references: [usersTable.id],
+    }),
     businessProfile: one(businessProfilesTable, {
-      fields: [userIbansTable.clerkId],
-      references: [businessProfilesTable.clerkId],
+      fields: [userIbansTable.userId],
+      references: [businessProfilesTable.userId],
     }),
     paymentTemplates: many(paymentTemplatesTable),
     qrGenerations: many(qrGenerationsTable),
@@ -149,9 +295,13 @@ export const userIbansRelations = relations(
 export const paymentTemplatesRelations = relations(
   paymentTemplatesTable,
   ({ one, many }) => ({
+    user: one(usersTable, {
+      fields: [paymentTemplatesTable.userId],
+      references: [usersTable.id],
+    }),
     businessProfile: one(businessProfilesTable, {
-      fields: [paymentTemplatesTable.clerkId],
-      references: [businessProfilesTable.clerkId],
+      fields: [paymentTemplatesTable.userId],
+      references: [businessProfilesTable.userId],
     }),
     userIban: one(userIbansTable, {
       fields: [paymentTemplatesTable.userIbanId],
@@ -164,9 +314,13 @@ export const paymentTemplatesRelations = relations(
 export const qrGenerationsRelations = relations(
   qrGenerationsTable,
   ({ one }) => ({
+    user: one(usersTable, {
+      fields: [qrGenerationsTable.userId],
+      references: [usersTable.id],
+    }),
     businessProfile: one(businessProfilesTable, {
-      fields: [qrGenerationsTable.clerkId],
-      references: [businessProfilesTable.clerkId],
+      fields: [qrGenerationsTable.userId],
+      references: [businessProfilesTable.userId],
     }),
     template: one(paymentTemplatesTable, {
       fields: [qrGenerationsTable.templateId],
@@ -179,7 +333,29 @@ export const qrGenerationsRelations = relations(
   })
 );
 
+export const dailyUserStatsRelations = relations(
+  dailyUserStatsTable,
+  ({ one }) => ({
+    user: one(usersTable, {
+      fields: [dailyUserStatsTable.userId],
+      references: [usersTable.id],
+    }),
+  })
+);
+
 // Type exports for use throughout the application
+export type User = typeof usersTable.$inferSelect;
+export type NewUser = typeof usersTable.$inferInsert;
+
+export type Session = typeof sessionsTable.$inferSelect;
+export type NewSession = typeof sessionsTable.$inferInsert;
+
+export type Account = typeof accountsTable.$inferSelect;
+export type NewAccount = typeof accountsTable.$inferInsert;
+
+export type Verification = typeof verificationsTable.$inferSelect;
+export type NewVerification = typeof verificationsTable.$inferInsert;
+
 export type BusinessProfile = typeof businessProfilesTable.$inferSelect;
 export type NewBusinessProfile = typeof businessProfilesTable.$inferInsert;
 
@@ -191,3 +367,9 @@ export type NewPaymentTemplate = typeof paymentTemplatesTable.$inferInsert;
 
 export type QrGeneration = typeof qrGenerationsTable.$inferSelect;
 export type NewQrGeneration = typeof qrGenerationsTable.$inferInsert;
+
+export type DailyUserStats = typeof dailyUserStatsTable.$inferSelect;
+export type NewDailyUserStats = typeof dailyUserStatsTable.$inferInsert;
+
+export type PlatformStats = typeof platformStatsTable.$inferSelect;
+export type NewPlatformStats = typeof platformStatsTable.$inferInsert;

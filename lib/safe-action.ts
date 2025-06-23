@@ -1,8 +1,9 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth';
 import {
   DEFAULT_SERVER_ERROR_MESSAGE,
   createSafeActionClient,
 } from 'next-safe-action';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 import { ERROR_CODES } from './errors';
 import { checkUserUsageLimit } from './rate-limiting';
@@ -41,6 +42,47 @@ export class FeatureNotAvailableError extends ActionError {
     );
   }
 }
+
+class AuthError extends Error {
+  constructor(message = 'User not authenticated') {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
+const handleServerError = (e: Error) => {
+  if (e instanceof AuthError) {
+    return e.message;
+  }
+  // For other errors, you might want to log them and return a generic message.
+  console.error('Server Action Error:', e);
+  return 'An unexpected error occurred.';
+};
+
+const baseClient = createSafeActionClient({
+  handleServerError(e) {
+    return handleServerError(e);
+  },
+});
+
+export const action = baseClient;
+
+export const protectedAction = baseClient.use(async ({ next }) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    throw new AuthError('Authentication required');
+  }
+
+  return next({
+    ctx: {
+      user: session.user,
+      userId: session.user.id,
+    },
+  });
+});
 
 // Base action client with error handling
 export const actionClient = createSafeActionClient({
@@ -98,7 +140,11 @@ export const actionClient = createSafeActionClient({
 
 // Authentication middleware
 export const authActionClient = actionClient.use(async ({ next, metadata }) => {
-  const { userId } = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const userId = session?.user?.id;
 
   // Check if action requires authentication
   if (metadata?.requiresAuth && !userId) {

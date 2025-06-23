@@ -31,7 +31,7 @@ export async function checkUserUsageLimit(): Promise<UsageStatus> {
   }
 
   const profile = await db.query.businessProfilesTable.findFirst({
-    where: eq(businessProfilesTable.clerkId, userId),
+    where: eq(businessProfilesTable.userId, userId),
   });
 
   if (!profile) {
@@ -59,7 +59,7 @@ export async function checkUserUsageLimit(): Promise<UsageStatus> {
     .from(qrGenerationsTable)
     .where(
       and(
-        eq(qrGenerationsTable.clerkId, profile.clerkId),
+        eq(qrGenerationsTable.userId, profile.userId),
         gte(qrGenerationsTable.generatedAt, periodStart)
       )
     );
@@ -161,7 +161,7 @@ export async function getUserUsageStats(): Promise<{
   const { start: thirtyDaysAgo } = getPeriodBoundaries('30d');
 
   const profile = await db.query.businessProfilesTable.findFirst({
-    where: eq(businessProfilesTable.clerkId, userId),
+    where: eq(businessProfilesTable.userId, userId),
   });
 
   if (!profile) {

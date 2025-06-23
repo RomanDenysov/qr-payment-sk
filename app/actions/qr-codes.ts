@@ -2,6 +2,7 @@
 
 import db from '@/db';
 import { businessProfilesTable, qrGenerationsTable } from '@/db/schema';
+import { trackUserActivity } from '@/lib/analytics';
 import { eurosToCents } from '@/lib/format-utils';
 import { getBySquareQR } from '@/lib/get-bysquare-qr';
 import {
@@ -70,7 +71,7 @@ export const generateQRCodeAuth = authActionClient
 
     // Get user profile
     const profile = await db.query.businessProfilesTable.findFirst({
-      where: eq(businessProfilesTable.clerkId, userId),
+      where: eq(businessProfilesTable.userId, userId),
     });
 
     if (!profile) {
@@ -104,7 +105,7 @@ export const generateQRCodeAuth = authActionClient
     const qrGeneration = await db
       .insert(qrGenerationsTable)
       .values({
-        clerkId: profile.clerkId,
+        userId: userId,
         templateName: 'One-time payment', // Default template name
         amount: eurosToCents(parsedInput.amount), // Convert EUR to cents using utility
         variableSymbol: variableSymbol, // Now a string, no BigInt conversion needed
@@ -113,6 +114,12 @@ export const generateQRCodeAuth = authActionClient
         note: parsedInput.paymentNote,
       })
       .returning();
+
+    // Track user activity for analytics
+    await trackUserActivity(userId, {
+      qrCodesGenerated: 1,
+      revenue: eurosToCents(parsedInput.amount),
+    });
 
     // Revalidate relevant pages
     revalidatePath('/dashboard');
@@ -195,7 +202,7 @@ export const generateQRFromTemplate = authActionClient
 
     // Get user profile
     const profile = await db.query.businessProfilesTable.findFirst({
-      where: eq(businessProfilesTable.clerkId, userId),
+      where: eq(businessProfilesTable.userId, userId),
     });
 
     if (!profile) {

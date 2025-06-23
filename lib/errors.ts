@@ -72,10 +72,6 @@ export class ValidationError extends AppError {
   readonly statusCode = ERROR_CODES.VALIDATION_ERROR;
   readonly httpStatus = 400;
   readonly isOperational = true;
-
-  constructor(message: string, validationDetails?: unknown) {
-    super(message, validationDetails);
-  }
 }
 
 // Authentication errors
@@ -97,10 +93,6 @@ export class RateLimitError extends AppError {
   readonly statusCode = ERROR_CODES.RATE_LIMIT_EXCEEDED;
   readonly httpStatus = 429;
   readonly isOperational = true;
-
-  constructor(message: string, rateLimitDetails?: unknown) {
-    super(message, rateLimitDetails);
-  }
 }
 
 // Resource not found errors
@@ -108,10 +100,6 @@ export class NotFoundError extends AppError {
   readonly statusCode = ERROR_CODES.NOT_FOUND;
   readonly httpStatus = 404;
   readonly isOperational = true;
-
-  constructor(resource = 'Resource') {
-    super(`${resource} not found`);
-  }
 }
 
 // Business logic errors
@@ -259,3 +247,16 @@ export function createSuccessResponse<T>(
     data,
   };
 }
+
+export class AuthError extends Error {
+  constructor(message = 'Authentication error') {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
+// Common error scenarios
+export const QR_ERRORS = {
+  INVALID_IBAN: 'INVALID_IBAN',
+  // ... existing code ...
+};
