@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  nodeMiddleware: true,
+  // nodeMiddleware: true,
 };
 
 export default nextConfig;
