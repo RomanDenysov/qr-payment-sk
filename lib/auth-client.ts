@@ -1,4 +1,9 @@
 import { env } from '@/env';
+import {
+  apiKeyClient,
+  emailOTPClient,
+  organizationClient,
+} from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 import { toast } from 'sonner';
 
@@ -15,4 +20,5 @@ export const { signIn, signUp, useSession, signOut } = createAuthClient({
       }
     },
   },
+  plugins: [emailOTPClient(), apiKeyClient(), organizationClient()],
 });

@@ -42,6 +42,7 @@ export const sessionsTable = createTable('session', {
   userId: text('user_id')
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
+  activeOrganizationId: text('active_organization_id'),
 });
 
 export const accountsTable = createTable('account', {
@@ -75,12 +76,72 @@ export const verificationsTable = createTable('verification', {
   ),
 });
 
-// Better Auth rate limiting table
+export const organizationsTable = createTable('organization', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').unique(),
+  logo: text('logo'),
+  createdAt: timestamp('created_at').notNull(),
+  metadata: text('metadata'),
+});
+
+export const memberTable = createTable('member', {
+  id: text('id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizationsTable.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => usersTable.id, { onDelete: 'cascade' }),
+  role: text('role').default('member').notNull(),
+  createdAt: timestamp('created_at').notNull(),
+});
+
+export const invitationTable = createTable('invitation', {
+  id: text('id').primaryKey(),
+  organizationId: text('organization_id')
+    .notNull()
+    .references(() => organizationsTable.id, { onDelete: 'cascade' }),
+  email: text('email').notNull(),
+  role: text('role'),
+  status: text('status').default('pending').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  inviterId: text('inviter_id')
+    .notNull()
+    .references(() => usersTable.id, { onDelete: 'cascade' }),
+});
+
+export const apikeyTable = createTable('apikey', {
+  id: text('id').primaryKey(),
+  name: text('name'),
+  start: text('start'),
+  prefix: text('prefix'),
+  key: text('key').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => usersTable.id, { onDelete: 'cascade' }),
+  refillInterval: integer('refill_interval'),
+  refillAmount: integer('refill_amount'),
+  lastRefillAt: timestamp('last_refill_at'),
+  enabled: boolean('enabled').default(true),
+  rateLimitEnabled: boolean('rate_limit_enabled').default(true),
+  rateLimitTimeWindow: integer('rate_limit_time_window').default(86400000),
+  rateLimitMax: integer('rate_limit_max').default(10),
+  requestCount: integer('request_count'),
+  remaining: integer('remaining'),
+  lastRequest: timestamp('last_request'),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+  permissions: text('permissions'),
+  metadata: text('metadata'),
+});
+
 export const rateLimitTable = createTable('rate_limit', {
   id: text('id').primaryKey(),
-  key: text('key').notNull(),
-  count: integer('count').notNull(),
-  lastRequest: bigint('last_request', { mode: 'bigint' }).notNull(),
+  key: text('key'),
+  count: integer('count'),
+  lastRequest: bigint('last_request', { mode: 'number' }),
 });
 
 // Variable symbol sequence for generating unique payment identifiers
