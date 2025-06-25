@@ -1,15 +1,6 @@
 import db from '@/db';
-import {
-  accountsTable,
-  apikeyTable,
-  invitationTable,
-  memberTable,
-  organizationsTable,
-  rateLimitTable,
-  sessionsTable,
-  usersTable,
-  verificationsTable,
-} from '@/db/schema';
+import { schema } from '@/db/schema';
+import { env } from '@/env';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createAuthMiddleware } from 'better-auth/api';
@@ -21,17 +12,7 @@ export const auth = betterAuth({
   appName: 'QR Platby',
   database: drizzleAdapter(db, {
     provider: 'pg',
-    schema: {
-      user: usersTable,
-      session: sessionsTable,
-      account: accountsTable,
-      verification: verificationsTable,
-      organization: organizationsTable,
-      member: memberTable,
-      invitation: invitationTable,
-      apikey: apikeyTable,
-      rateLimit: rateLimitTable,
-    },
+    schema,
   }),
   account: {
     accountLinking: {
@@ -74,11 +55,11 @@ export const auth = betterAuth({
     //   // Optional
     //   appBundleIdentifier: env.APPLE_APP_BUNDLE_IDENTIFIER,
     // },
-    // google: {
-    // prompt: 'select_account',
-    //   clientId: env.GOOGLE_CLIENT_ID,
-    //   clientSecret: env.GOOGLE_CLIENT_SECRET,
-    // },
+    google: {
+      prompt: 'select_account',
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+    },
   },
   trustedOrigins: ['https://appleid.apple.com'],
   plugins: [

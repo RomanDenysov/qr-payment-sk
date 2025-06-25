@@ -8,7 +8,7 @@ import { createAuthClient } from 'better-auth/react';
 import { toast } from 'sonner';
 
 export const { signIn, signUp, useSession, signOut } = createAuthClient({
-  baseURL: env.BETTER_AUTH_URL,
+  baseURL: env.NEXT_PUBLIC_BETTER_AUTH_URL,
   fetchOptions: {
     // biome-ignore lint/suspicious/useAwait: <explanation>
     onError: async (context) => {

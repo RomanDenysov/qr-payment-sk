@@ -404,6 +404,24 @@ export const dailyUserStatsRelations = relations(
   })
 );
 
+export const schema = {
+  user: usersTable,
+  session: sessionsTable,
+  account: accountsTable,
+  verification: verificationsTable,
+  organization: organizationsTable,
+  member: memberTable,
+  invitation: invitationTable,
+  apikey: apikeyTable,
+  rateLimit: rateLimitTable,
+  businessProfilesTable,
+  userIbansTable,
+  paymentTemplatesTable,
+  qrGenerationsTable,
+  dailyUserStatsTable,
+  platformStatsTable,
+};
+
 // Type exports for use throughout the application
 export type User = typeof usersTable.$inferSelect;
 export type NewUser = typeof usersTable.$inferInsert;

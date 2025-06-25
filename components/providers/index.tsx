@@ -1,7 +1,5 @@
-import type { ReactNode } from 'react';
-
-import dynamic from 'next/dynamic';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import type { ReactNode } from 'react';
 import { Provider as WBProvider } from 'react-wrap-balancer';
 import { Toaster } from '../ui/sonner';
 import { ThemeProvider } from './theme-provider';
@@ -9,10 +7,6 @@ import { ThemeProvider } from './theme-provider';
 type ProvidersProps = {
   readonly children: ReactNode;
 };
-
-const DynamicClerkClientProvider = dynamic(() =>
-  import('./clerk-client-provider').then((mod) => mod.ClerkClientProvider)
-);
 
 export function Providers({ children }: ProvidersProps) {
   return (
@@ -23,10 +17,8 @@ export function Providers({ children }: ProvidersProps) {
         enableSystem
         disableTransitionOnChange
       >
-        {/* <DynamicClerkClientProvider> */}
         <WBProvider>{children}</WBProvider>
         <Toaster />
-        {/* </DynamicClerkClientProvider> */}
       </ThemeProvider>
     </NuqsAdapter>
   );
