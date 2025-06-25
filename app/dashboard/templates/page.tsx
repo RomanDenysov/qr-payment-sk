@@ -48,7 +48,7 @@ export default async function TemplatesPage() {
         </div>
       </FadeDiv>
 
-      {templates.length === 0 ? (
+      {templates.data?.length === 0 ? (
         <FadeDiv>
           <Card>
             <CardContent className="py-12">
@@ -72,7 +72,7 @@ export default async function TemplatesPage() {
       ) : (
         <FadeDiv>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {templates.map((template, index) => (
+            {templates.data?.map((template) => (
               <FadeDiv key={template.id}>
                 <Card className="group transition-shadow hover:shadow-lg">
                   <CardHeader>
@@ -135,8 +135,8 @@ export default async function TemplatesPage() {
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">IBAN:</span>
                           <span className="font-mono text-xs">
-                            {template.iban.slice(0, 8)}...
-                            {template.iban.slice(-4)}
+                            {template.userIbanId?.slice(0, 8)}...
+                            {template.userIbanId?.slice(-4)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">

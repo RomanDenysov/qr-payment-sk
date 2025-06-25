@@ -13,7 +13,7 @@ import { Calendar, Clock, CreditCard, Download, QrCode } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function HistoryPage() {
-  const qrHistory = await getRecentQRGenerations(10);
+  const qrHistory = await getRecentQRGenerations({ limit: 10 });
 
   return (
     <FadeContainer className="space-y-8">
@@ -36,7 +36,7 @@ export default async function HistoryPage() {
         </div>
       </FadeDiv>
 
-      {qrHistory.length === 0 ? (
+      {qrHistory.data?.length === 0 ? (
         <FadeDiv>
           <Card>
             <CardContent className="py-12">
@@ -59,7 +59,7 @@ export default async function HistoryPage() {
       ) : (
         <FadeDiv>
           <div className="space-y-4">
-            {qrHistory.map((qr) => (
+            {qrHistory.data?.map((qr) => (
               <Card key={qr.id} className="transition-shadow hover:shadow-md">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -93,7 +93,8 @@ export default async function HistoryPage() {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">IBAN:</span>
                         <span className="font-mono">
-                          {qr.iban.slice(0, 8)}...{qr.iban.slice(-4)}
+                          {qr.userIbanId?.slice(0, 8)}...
+                          {qr.userIbanId?.slice(-4)}
                         </span>
                       </div>
 

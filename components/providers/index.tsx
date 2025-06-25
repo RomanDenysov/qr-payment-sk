@@ -2,6 +2,7 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type { ReactNode } from 'react';
 import { Provider as WBProvider } from 'react-wrap-balancer';
 import { Toaster } from '../ui/sonner';
+import { TooltipProvider } from '../ui/tooltip';
 import { ThemeProvider } from './theme-provider';
 
 type ProvidersProps = {
@@ -17,7 +18,9 @@ export function Providers({ children }: ProvidersProps) {
         enableSystem
         disableTransitionOnChange
       >
-        <WBProvider>{children}</WBProvider>
+        <WBProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </WBProvider>
         <Toaster />
       </ThemeProvider>
     </NuqsAdapter>

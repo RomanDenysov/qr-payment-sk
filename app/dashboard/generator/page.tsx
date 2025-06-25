@@ -27,7 +27,7 @@ export default async function GeneratorPage() {
 
         {/* Templates Sidebar */}
         <FadeDiv>
-          <TemplatesSidebar templates={templates} />
+          <TemplatesSidebar templates={templates.data ?? []} />
         </FadeDiv>
       </div>
     </FadeContainer>
