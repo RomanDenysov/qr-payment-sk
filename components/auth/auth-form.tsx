@@ -127,6 +127,7 @@ export function AuthForm() {
         router.push('/dashboard');
       } catch (error) {
         toast.error('Neplatný alebo nesprávny OTP kód');
+        // biome-ignore lint/suspicious/noConsole: <explanation>
         console.error('OTP verification error:', error);
         otpForm.reset();
       }
@@ -143,6 +144,7 @@ export function AuthForm() {
         toast.success('OTP kód bol znovu odoslaný');
       } catch (error) {
         toast.error('Chyba pri opätovnom odosielaní OTP kódu');
+        // biome-ignore lint/suspicious/noConsole: <explanation>
         console.error('OTP resend error:', error);
       }
     });
@@ -307,6 +309,7 @@ export function AuthForm() {
                         <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                         Odosielanie...
                       </>
+                      // biome-ignore lint/nursery/noNestedTernary: <explanation>
                     ) : authState === 'prihlasenie' ? (
                       'Prihlásiť sa'
                     ) : (
@@ -377,7 +380,7 @@ export function AuthForm() {
         )}
 
         <FadeDiv className="text-balance text-center text-muted-foreground text-xs *:[a]:underline *:[a]:underline-offset-4 *:[a]:hover:text-primary">
-          By clicking continue, you agree to our{' '}
+          Pri pokračovaní súhlasíte s našimi{' '}
           <Link href="/pravne/obchodne-podmienky">Obchodné podmienky</Link> a{' '}
           <Link href="/pravne/ochrana-sukromia">Ochrana súkromia</Link>.
         </FadeDiv>
