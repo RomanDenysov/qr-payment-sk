@@ -1,6 +1,5 @@
 import { AnimatedBackground } from '@/components/motion-primitives/animated-background';
 import { Logo } from '@/components/shared/logo';
-import { UserButton } from '@clerk/nextjs';
 import {
   CreditCardIcon,
   HistoryIcon,
@@ -38,13 +37,6 @@ export function DashboardHeader() {
       <div className="flex w-full flex-col gap-4 md:gap-8">
         <div className="flex max-h-16 w-full items-center justify-between py-2">
           <Logo />
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: '!size-8 !rounded-lg',
-              },
-            }}
-          />
         </div>
         <div className="flex w-full items-end justify-center md:justify-start">
           <div className="-pb-1 flex items-center gap-2 md:gap-3">

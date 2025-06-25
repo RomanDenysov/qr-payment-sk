@@ -2,7 +2,6 @@ import {
   getRecentQRGenerations,
   getUserTemplates,
 } from '@/app/actions/dashboard';
-import { SubscriptionCard } from '@/components/billing/subscription-card';
 import { StatsLabels } from '@/components/dashboard/stats-labels';
 import { FadeContainer, FadeDiv } from '@/components/motion/fade';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +21,7 @@ import Link from 'next/link';
 export default async function DashboardPage() {
   const [templates, recentHistory] = await Promise.all([
     getUserTemplates(),
-    getRecentQRGenerations(5),
+    getRecentQRGenerations({ limit: 5 }),
   ]);
 
   return (
@@ -61,9 +60,9 @@ export default async function DashboardPage() {
               <CardDescription>Vaše najnovšie QR kódy</CardDescription>
             </CardHeader>
             <CardContent>
-              {recentHistory.length > 0 ? (
+              {recentHistory.data && recentHistory.data.length > 0 ? (
                 <div className="space-y-3">
-                  {recentHistory.map((item) => (
+                  {recentHistory.data.map((item) => (
                     <div
                       key={item.id}
                       className="flex items-center justify-between border-b pb-3 last:border-b-0 last:pb-0"
@@ -86,7 +85,7 @@ export default async function DashboardPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-sm">
-                          {formatCurrency(item.amount)}
+                          {formatCurrency(item.amount.toString())}
                         </p>
                         <Badge variant="secondary" className="text-xs">
                           {/* TODO: Add IBAN name */}
@@ -123,9 +122,7 @@ export default async function DashboardPage() {
         </FadeDiv>
 
         {/* Subscription Card */}
-        <FadeDiv>
-          <SubscriptionCard />
-        </FadeDiv>
+        <FadeDiv>{/* <SubscriptionCard /> */}</FadeDiv>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -142,9 +139,9 @@ export default async function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {templates.length > 0 ? (
+              {templates.data && templates.data.length > 0 ? (
                 <div className="space-y-3">
-                  {templates.slice(0, 3).map((template) => (
+                  {templates.data.slice(0, 3).map((template) => (
                     <div
                       key={template.id}
                       className="flex items-center justify-between border-b pb-3 last:border-b-0 last:pb-0"
@@ -157,7 +154,7 @@ export default async function DashboardPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-sm">
-                          {formatCurrency(template.amount)}
+                          {formatCurrency(template.amount.toString())}
                         </p>
                         <Link
                           href={`/dashboard/generator?template=${template.id}`}

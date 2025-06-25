@@ -24,7 +24,7 @@ export function Logo({
 export function LogoSmall({
   children,
   href = '/',
-}: { children: ReactNode; href?: string }) {
+}: { children?: ReactNode; href?: string }) {
   return (
     <Link href={href} aria-label="domov" className="flex items-center gap-1">
       {children}

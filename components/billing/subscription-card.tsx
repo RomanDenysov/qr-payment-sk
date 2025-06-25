@@ -1,6 +1,5 @@
 'use client';
 
-import { getUserSubscription } from '@/app/actions/profile';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -66,8 +65,7 @@ export function SubscriptionCard() {
   useEffect(() => {
     async function loadSubscriptionData() {
       try {
-        const subscription = await getUserSubscription();
-        const plan = subscription?.plan || 'free';
+        const plan = 'free';
 
         // For now, we'll use placeholder data for usage
         // In a real implementation, this would come from the database
@@ -78,8 +76,8 @@ export function SubscriptionCard() {
 
         setSubscriptionData({
           plan,
-          status: subscription?.status || 'active',
-          currentPeriodEnd: subscription?.currentPeriodEnd || null,
+          status: 'active',
+          currentPeriodEnd: null,
           ...usageData,
         });
       } catch (error) {

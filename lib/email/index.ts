@@ -1,27 +1,44 @@
 import { env } from '@/env';
-import nodemailer from 'nodemailer';
+import * as SibApiV3Sdk from '@getbrevo/brevo';
+import { render } from '@react-email/components';
+import { OTPEmail } from './templates/otp-email';
 
-const config = {
-  from: 'QR Platby <info@qrplatby.sk>',
-};
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+apiInstance.setApiKey(
+  SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
+  env.BREVO_API_KEY
+);
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: env.EMAIL_USER,
-    pass: env.EMAIL_PASSWORD,
-  },
-});
+export const sendOTPEmail = async (
+  email: string,
+  otpCode: string,
+  username?: string
+) => {
+  const emailHtml = await render(
+    OTPEmail({
+      username,
+      otpCode,
+      expiresIn: 10,
+    })
+  );
 
-export const sendEmail = async (to: string, subject: string, html: string) => {
-  const info = await transporter.sendMail({
-    from: config.from,
-    to,
-    subject,
-    html,
-  });
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  sendSmtpEmail.subject = `Код подтверждения: ${otpCode}`;
+  sendSmtpEmail.htmlContent = emailHtml;
+  sendSmtpEmail.sender = {
+    name: 'QR Platby',
+    email: 'noreply@qr-platby.online',
+  };
+  sendSmtpEmail.to = [{ email: email }];
 
-  return info;
+  try {
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    return { success: true, messageId: result.body.messageId };
+  } catch (error) {
+    console.error('OTP Email error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 };

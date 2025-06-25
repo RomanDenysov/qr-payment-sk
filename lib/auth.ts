@@ -7,6 +7,7 @@ import { createAuthMiddleware } from 'better-auth/api';
 import { nextCookies } from 'better-auth/next-js';
 import { apiKey, emailOTP, openAPI, organization } from 'better-auth/plugins';
 import { trackUserActivity } from './analytics';
+import { sendOTPEmail } from './email';
 
 export const auth = betterAuth({
   appName: 'QR Platby',
@@ -64,11 +65,8 @@ export const auth = betterAuth({
   trustedOrigins: ['https://appleid.apple.com'],
   plugins: [
     emailOTP({
-      async sendVerificationOTP({ email, otp, type }) {
-        // Implement the sendVerificationOTP method to send the OTP to the user's email address
-        console.log('Sending verification OTP to', email);
-        console.log('OTP:', otp);
-        console.log('Type:', type);
+      async sendVerificationOTP({ email, otp }) {
+        await sendOTPEmail(email, otp);
       },
     }),
     organization(),

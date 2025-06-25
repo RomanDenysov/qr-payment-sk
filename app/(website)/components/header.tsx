@@ -12,6 +12,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
+import { UserButton } from '@/components/user/user-button';
 import useScroll from '@/hooks/use-scroll';
 import { cn } from '@/lib/utils';
 import { LogInIcon, MenuIcon } from 'lucide-react';
@@ -83,15 +84,18 @@ export function Header({ isSignedIn }: { isSignedIn: boolean }) {
 
           <div className="flex flex-1 items-center justify-end gap-3">
             {isSignedIn ? (
-              <Link
-                href="/dashboard"
-                className={cn(
-                  buttonVariants({ variant: 'ghost', size: 'sm' }),
-                  'hidden border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex'
-                )}
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'sm' }),
+                    'hidden border border-transparent transition-colors hover:border-primary hover:bg-transparent hover:text-primary sm:flex'
+                  )}
+                >
+                  Dashboard
+                </Link>
+                <UserButton />
+              </>
             ) : (
               <Link
                 href="/autorizacia"
