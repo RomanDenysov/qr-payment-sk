@@ -23,6 +23,10 @@ export const usersTable = createTable('user', {
     .$defaultFn(() => false)
     .notNull(),
   image: text('image'),
+
+  // Simple user group for feature flag targeting
+  userGroup: varchar('user_group', { length: 50 }).default('user'), // 'user', 'beta_tester', 'admin', 'vip'
+
   createdAt: timestamp('created_at')
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
