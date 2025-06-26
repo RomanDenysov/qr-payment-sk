@@ -1,6 +1,7 @@
 'use client';
 
 import { emailOtp, signIn } from '@/lib/auth-client';
+import { isDev } from '@/lib/configs';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2Icon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -17,7 +18,6 @@ import {
   FormMessage,
 } from '../ui/form';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp';
-import { useAuthState } from './use-auth-state';
 
 const otpSchema = z.object({
   otp: z.string().min(6, 'OTP musí mať 6 znakov'),
@@ -27,7 +27,6 @@ type OtpFormValues = z.infer<typeof otpSchema>;
 
 export function OtpForm({ userEmail }: { userEmail: string }) {
   const router = useRouter();
-  const { authState, setAuthState } = useAuthState();
   const form = useForm<OtpFormValues>({
     resolver: zodResolver(otpSchema),
     defaultValues: {
@@ -58,7 +57,7 @@ export function OtpForm({ userEmail }: { userEmail: string }) {
       }
     );
 
-  const handleResendOtp = async () => {
+  const handleResendOtp = async () =>
     await emailOtp.sendVerificationOtp(
       {
         email: userEmail,
@@ -75,7 +74,6 @@ export function OtpForm({ userEmail }: { userEmail: string }) {
         },
       }
     );
-  };
 
   return (
     <Form {...form}>
@@ -116,7 +114,7 @@ export function OtpForm({ userEmail }: { userEmail: string }) {
         <Button
           type="submit"
           className="w-full"
-          disabled={isSubmitting || (form.watch('otp') || '').length !== 6}
+          disabled={isSubmitting || !form.formState.isValid}
         >
           {isSubmitting ? (
             <>
@@ -129,7 +127,7 @@ export function OtpForm({ userEmail }: { userEmail: string }) {
         </Button>
 
         {/* Debug info */}
-        {process.env.NODE_ENV === 'development' && (
+        {isDev && (
           <div className="mt-2 space-y-1 text-muted-foreground text-xs">
             <div>OTP Length: {form.watch('otp')?.length || 0}</div>
             <div>OTP Value: "{form.watch('otp')}"</div>

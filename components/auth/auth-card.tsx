@@ -1,16 +1,30 @@
 'use client';
 
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useQueryState } from 'nuqs';
+import { useEffect, useState } from 'react';
 import { FadeDiv, FadeSpan } from '../motion/fade';
 import { Button } from '../ui/button';
 import { EmailForm } from './email-form';
 import { OtpForm } from './otp-form';
-import { useAuthState } from './use-auth-state';
+
+export type AuthState = 'prihlasenie' | 'registracia' | 'otp';
 
 export function AuthCard() {
-  const { authState, setAuthState } = useAuthState();
-  const [userEmail, setUserEmail] = useState('');
+  const [authState, setAuthState] = useQueryState<AuthState>('status', {
+    defaultValue: 'prihlasenie',
+    history: 'push',
+    shallow: true,
+    parse: (value) => value as AuthState,
+    serialize: (value) => value as AuthState,
+  });
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (authState === 'otp' && !userEmail) {
+      setAuthState('prihlasenie');
+    }
+  }, [authState, userEmail, setAuthState]);
 
   const handleBackToEmail = () =>
     setAuthState(authState === 'otp' ? 'prihlasenie' : 'prihlasenie');
@@ -95,11 +109,16 @@ export function AuthCard() {
       </div>
       {authState === 'otp' ? (
         <FadeDiv>
-          <OtpForm userEmail={userEmail} />
+          {/* biome-ignore lint/style/noNonNullAssertion: <explanation> */}
+          <OtpForm userEmail={userEmail!} />
         </FadeDiv>
       ) : (
         <FadeDiv>
-          <EmailForm setUserEmail={setUserEmail} />
+          <EmailForm
+            setUserEmail={setUserEmail}
+            authState={authState}
+            setAuthState={setAuthState}
+          />
         </FadeDiv>
       )}
     </>

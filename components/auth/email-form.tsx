@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from '../ui/form';
 import { Input } from '../ui/input';
-import { useAuthState } from './use-auth-state';
+import type { AuthState } from './auth-card';
 
 const emailSchema = z.object({
   email: z.string().email(),
@@ -26,9 +26,13 @@ type EmailFormValues = z.infer<typeof emailSchema>;
 
 export function EmailForm({
   setUserEmail,
-}: { setUserEmail: (email: string) => void }) {
-  const { authState, setAuthState } = useAuthState();
-
+  authState,
+  setAuthState,
+}: {
+  setUserEmail: (email: string) => void;
+  authState: AuthState;
+  setAuthState: (authState: AuthState) => void;
+}) {
   const form = useForm<EmailFormValues>({
     resolver: zodResolver(emailSchema),
     defaultValues: {
