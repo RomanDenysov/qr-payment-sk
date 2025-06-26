@@ -1,11 +1,11 @@
 /* eslint-disable */
 
-'use client';
+"use client";
 
-import type * as sdk from 'hypertune';
-import { useRouter } from 'next/navigation';
-import * as React from 'react';
-import * as hypertune from './hypertune';
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import * as hypertune from "./hypertune";
+import * as sdk from "hypertune";
 
 // Hypertune
 
@@ -43,9 +43,7 @@ const HypertuneSourceContext = React.createContext<{
   setOverride: (newOverride: sdk.DeepPartial<hypertune.Source> | null) => void;
 }>({
   hypertuneSource: hypertune.emptySource,
-  setOverride: () => {
-    /* noop */
-  },
+  setOverride: () => { /* noop */ },
 });
 
 export function HypertuneSourceProvider({
@@ -58,12 +56,12 @@ export function HypertuneSourceProvider({
   const hypertuneSource = React.useMemo(
     () => {
       return hypertune.createSource({
-        initDataProvider: typeof window === 'undefined' ? null : undefined,
+        initDataProvider: typeof window === "undefined" ? null : undefined,
         remoteLogging: {
-          mode: typeof window === 'undefined' ? 'off' : undefined,
+          mode: typeof window === "undefined" ? "off" : undefined,
         },
         // eslint-disable-next-line @typescript-eslint/no-empty-function
-        localLogger: typeof window === 'undefined' ? () => {} : undefined,
+        localLogger: typeof window === "undefined" ? () => {} : undefined,
         ...createSourceOptions,
       });
     },
@@ -78,7 +76,7 @@ export function HypertuneSourceProvider({
   const router = useRouter();
   React.useEffect(() => {
     const updateListener: sdk.UpdateListener = (newStateHash, metadata) => {
-      if (metadata.updateTrigger !== 'initDataProvider') {
+      if (metadata.updateTrigger !== "initDataProvider") {
         return;
       }
       setStateHash(newStateHash); // Re-render
@@ -130,9 +128,7 @@ export function useHypertuneSource(): hypertune.SourceNode {
   return hypertuneSource;
 }
 
-export function useSetOverride(): (
-  newOverride: sdk.DeepPartial<hypertune.Source> | null
-) => void {
+export function useSetOverride(): (newOverride: sdk.DeepPartial<hypertune.Source> | null) => void {
   const { setOverride } = React.useContext(HypertuneSourceContext);
   return setOverride;
 }
@@ -173,7 +169,7 @@ export function useHypertune(): hypertune.RootNode {
 
   if (!hypertuneRoot.props.context) {
     console.warn(
-      '[Hypertune] Calling `useHypertune` hook outside of the `HypertuneProvider`. Fallback values will be used.'
+      "[Hypertune] Calling `useHypertune` hook outside of the `HypertuneProvider`. Fallback values will be used."
     );
   }
   return hypertuneRoot;
@@ -227,12 +223,12 @@ export function HypertuneClientLogger({
   return null;
 }
 
-export const overrideCookieName = 'hypertuneOverride';
+export const overrideCookieName = "hypertuneOverride";
 
 function setOverrideCookie(newOverride: any): void {
   const d = new Date();
   d.setTime(d.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-  const expires = 'expires=' + d.toUTCString();
+  let expires = "expires=" + d.toUTCString();
 
   document.cookie = `${overrideCookieName}=${JSON.stringify(newOverride)};${expires};path=/`;
 }

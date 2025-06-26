@@ -20,6 +20,7 @@ export const env = createEnv({
     // APPLE_CLIENT_ID: z.string(),
     // APPLE_CLIENT_SECRET: z.string(),
     // APPLE_APP_BUNDLE_IDENTIFIER: z.string(),
+    QRPAYMENTS_NEXT_PUBLIC_HYPERTUNE_TOKEN: z.string(),
 
     NODE_ENV: z
       .enum(['development', 'production', 'test'])
@@ -28,7 +29,6 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),
     NEXT_PUBLIC_APP_URL: z.string().url(),
-    NEXT_PUBLIC_HYPERTUNE_TOKEN: z.string(),
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
@@ -47,7 +47,8 @@ export const env = createEnv({
     EMAIL_USER: process.env.EMAIL_USER,
     EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
     NODE_ENV: process.env.NODE_ENV || 'development',
-    NEXT_PUBLIC_HYPERTUNE_TOKEN: process.env.NEXT_PUBLIC_HYPERTUNE_TOKEN,
+    QRPAYMENTS_NEXT_PUBLIC_HYPERTUNE_TOKEN:
+      process.env.QRPAYMENTS_NEXT_PUBLIC_HYPERTUNE_TOKEN,
     HYPERTUNE_FRAMEWORK: process.env.HYPERTUNE_FRAMEWORK,
     HYPERTUNE_OUTPUT_DIRECTORY_PATH:
       process.env.HYPERTUNE_OUTPUT_DIRECTORY_PATH,

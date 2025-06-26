@@ -20,7 +20,7 @@ export async function Providers({ children }: ProvidersProps) {
   return (
     <HypertuneProvider
       createSourceOptions={{
-        token: env.NEXT_PUBLIC_HYPERTUNE_TOKEN,
+        token: env.QRPAYMENTS_NEXT_PUBLIC_HYPERTUNE_TOKEN,
         initData: undefined,
       }}
       rootArgs={{

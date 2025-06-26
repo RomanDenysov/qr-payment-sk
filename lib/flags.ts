@@ -1,8 +1,8 @@
-import 'server-only';
 import { getUser } from '@/app/actions/users';
+import { env } from '@/env';
 import {
   type Context,
-  type FlagValues,
+  type RootFlagValues,
   createSource,
   vercelFlagDefinitions as flagDefinitions,
   flagFallbacks,
@@ -16,20 +16,16 @@ const identify: Identify<Context> = dedupe(async ({ headers, cookies }) => {
 
   // You can add more context here for better targeting
   return {
-    environment: process.env.NODE_ENV,
+    environment: env.NODE_ENV,
     user: {
       id: user?.id ?? '',
       name: user?.name ?? '',
       email: user?.email ?? '',
-      // Add more targeting criteria as needed:
-      // plan: user?.subscription?.plan ?? 'free',
-      // createdAt: user?.createdAt?.toISOString() ?? '',
-      // isActive: user?.isActive ?? false,
     },
   };
 });
 
-const hypertuneAdapter = createHypertuneAdapter<FlagValues, Context>({
+const hypertuneAdapter = createHypertuneAdapter<RootFlagValues, Context>({
   createSource,
   flagFallbacks,
   flagDefinitions,

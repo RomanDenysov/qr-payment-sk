@@ -60,14 +60,14 @@ const handleServerError = (e: Error) => {
 };
 
 const baseClient = createSafeActionClient({
-  handleServerError(e) {
+  handleServerError(e: Error) {
     return handleServerError(e);
   },
 });
 
 export const action = baseClient;
 
-export const protectedAction = baseClient.use(async ({ next }) => {
+export const protectedAction = baseClient.use(async ({ next }: any) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -95,8 +95,8 @@ export const actionClient = createSafeActionClient({
     }),
 
   // Custom server error handler
-  handleServerError: (error, utils) => {
-    const { clientInput, metadata, ctx } = utils;
+  handleServerError: (error: Error, utils: any) => {
+    const { metadata, ctx } = utils;
 
     // Log error for monitoring
     console.error('Action Error:', {
@@ -139,49 +139,54 @@ export const actionClient = createSafeActionClient({
 });
 
 // Authentication middleware
-export const authActionClient = actionClient.use(async ({ next, metadata }) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export const authActionClient = actionClient.use(
+  async ({ next, metadata }: any) => {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
 
-  const userId = session?.user?.id;
+    const userId = session?.user?.id;
 
-  // Check if action requires authentication
-  if (metadata?.requiresAuth && !userId) {
-    throw new AuthenticationRequiredError();
-  }
-
-  // If user is authenticated, check rate limits
-  if (userId) {
-    try {
-      const usageStatus = await checkUserUsageLimit();
-
-      return next({
-        ctx: {
-          userId,
-          usageStatus,
-        },
-      });
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('limit exceeded')) {
-        throw new RateLimitExceededError(error.message);
-      }
-      throw error;
+    // Check if action requires authentication
+    if (metadata?.requiresAuth && !userId) {
+      throw new AuthenticationRequiredError();
     }
-  }
 
-  // For non-authenticated users, just pass empty context
-  return next({
-    ctx: {
-      userId: null,
-      usageStatus: null,
-    },
-  });
-});
+    // If user is authenticated, check rate limits
+    if (userId) {
+      try {
+        const usageStatus = await checkUserUsageLimit();
+
+        return next({
+          ctx: {
+            userId,
+            usageStatus,
+          },
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.includes('limit exceeded')
+        ) {
+          throw new RateLimitExceededError(error.message);
+        }
+        throw error;
+      }
+    }
+
+    // For non-authenticated users, just pass empty context
+    return next({
+      ctx: {
+        userId: null,
+        usageStatus: null,
+      },
+    });
+  }
+);
 
 // Anonymous action client for public actions
 export const publicActionClient = actionClient.use(
-  async ({ next, metadata }) => {
+  async ({ next, metadata }: any) => {
     // TODO: Implement IP-based rate limiting for anonymous users
     // For now, just log the attempt
     console.log('Anonymous action:', metadata?.actionName);
