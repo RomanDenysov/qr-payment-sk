@@ -9,6 +9,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { useQrCodeActions } from '@/hooks/use-qr-code-actions';
+import { useQrCodeDrawer } from '@/hooks/use-qr-code-drawer';
 import {
   CheckCircleIcon,
   CopyIcon,
@@ -17,28 +18,20 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 
-export function ShowQrDrawer({ qrCodeUrl }: { qrCodeUrl: string }) {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (qrCodeUrl) {
-      setOpen(true);
-    }
-    return () => {
-      setOpen(false);
-    };
-  }, [qrCodeUrl]);
+export function ShowQrDrawer() {
+  const setIsOpen = useQrCodeDrawer((state) => state.setIsOpen);
+  const isOpen = useQrCodeDrawer((state) => state.isOpen);
+  const qrCodeUrl = useQrCodeDrawer((state) => state.qrCodeUrl);
 
   const { isLoading, handleCopyQR, handleShareQR, handleDownloadQR } =
     useQrCodeActions(qrCodeUrl);
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader>

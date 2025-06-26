@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Form,
   FormControl,
@@ -6,6 +8,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { useQrCodeDrawer } from '@/hooks/use-qr-code-drawer';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2Icon, QrCodeIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -25,6 +28,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export function QrCodeForm() {
+  const setQrCodeUrl = useQrCodeDrawer((state) => state.setQrCodeUrl);
+  const setIsOpen = useQrCodeDrawer((state) => state.setIsOpen);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -38,7 +43,8 @@ export function QrCodeForm() {
   const isSubmitting = form.formState.isSubmitting;
 
   const onSubmit = (data: FormValues) => {
-    console.log(data);
+    // setQrCodeUrl(data);
+    setIsOpen(true);
   };
 
   return (

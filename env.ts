@@ -29,6 +29,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url(),
     NEXT_PUBLIC_APP_URL: z.string().url(),
+    NEXT_PUBLIC_C15T_URL: z.string().url(),
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
@@ -52,6 +53,8 @@ export const env = createEnv({
     HYPERTUNE_FRAMEWORK: process.env.HYPERTUNE_FRAMEWORK,
     HYPERTUNE_OUTPUT_DIRECTORY_PATH:
       process.env.HYPERTUNE_OUTPUT_DIRECTORY_PATH,
+    NEXT_PUBLIC_C15T_URL:
+      process.env.NEXT_PUBLIC_C15T_URL || 'http://localhost:3000',
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   extends: [vercel()],

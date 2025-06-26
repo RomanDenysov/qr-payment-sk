@@ -15,6 +15,14 @@ import {
 
 const createTable = pgTableCreator((name) => `sk_${name}`);
 
+// Variable symbol sequence for generating unique payment identifiers
+// Starts at 10000000 (8 digits) and can go up to 9999999999 (10 digits)
+export const variableSymbolSequence = pgSequence('variable_symbol_seq', {
+  startWith: 10000000, // Start with 8-digit numbers
+  maxValue: 9999999999, // Max 10 digits (Slovak banking standard)
+  cycle: false, // Don't cycle back to start when maxValue is reached
+});
+
 export const usersTable = createTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -158,14 +166,6 @@ export const rateLimitTable = createTable('rate_limit', {
   lastRequest: bigint('last_request', { mode: 'number' }),
 });
 
-// Variable symbol sequence for generating unique payment identifiers
-// Starts at 10000000 (8 digits) and can go up to 9999999999 (10 digits)
-export const variableSymbolSequence = pgSequence('variable_symbol_seq', {
-  startWith: 10000000, // Start with 8-digit numbers
-  maxValue: 9999999999, // Max 10 digits (Slovak banking standard)
-  cycle: false, // Don't cycle back to start when maxValue is reached
-});
-
 // Optional business profiles - only created when users need business features
 // This stores data that can't be stored in Better Auth (preferences, business settings, etc.)
 export const businessProfilesTable = createTable(
@@ -247,13 +247,13 @@ export const qrGenerationsTable = createTable(
   'qr_generations',
   {
     id: uuid().primaryKey().defaultRandom(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => usersTable.id, { onDelete: 'cascade' }),
+    userId: text('user_id').references(() => usersTable.id, {
+      onDelete: 'set null',
+    }),
     templateId: uuid('template_id').references(() => paymentTemplatesTable.id, {
       onDelete: 'set null',
     }),
-    templateName: varchar('template_name', { length: 100 }).notNull(), // Preserved if template deleted
+    templateName: varchar('template_name', { length: 100 }), // Preserved if template deleted
     amount: integer('amount').notNull(), // Amount in cents (e.g. 2550 = €25.50)
     variableSymbol: varchar('variable_symbol', { length: 10 })
       .unique()

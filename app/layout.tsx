@@ -25,7 +25,7 @@ type RootLayoutProps = {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
-      lang="en"
+      lang="sk"
       className={cn(fonts, 'scroll-smooth')}
       suppressHydrationWarning
     >
