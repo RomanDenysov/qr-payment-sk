@@ -1,11 +1,12 @@
-import { AuthCard } from '@/components/auth/auth-card';
-import { ProvidersForm } from '@/components/auth/providers-form';
 import { FadeDiv } from '@/components/motion/fade';
 import { appleSignUpFlag } from '@/lib/flags';
 import Link from 'next/link';
+import { AuthCard } from './components/auth-card';
+import { ProvidersForm } from './components/providers-form';
 
 export default async function AutorizaciaPage() {
   const appleSignUpFlagValue = await appleSignUpFlag();
+
   return (
     <div className="mx-auto size-full max-w-xs sm:max-w-sm md:max-w-md">
       <div className="space-y-6">

@@ -1,13 +1,13 @@
 'use client';
 import { cn } from '@/lib/utils';
-import { AnimatePresence, Transition, motion } from 'motion/react';
+import { AnimatePresence, type Transition, motion } from 'motion/react';
 import {
   Children,
+  type ReactElement,
   cloneElement,
-  ReactElement,
   useEffect,
-  useState,
   useId,
+  useState,
 } from 'react';
 
 export type AnimatedBackgroundProps = {
@@ -46,6 +46,7 @@ export function AnimatedBackground({
     }
   }, [defaultValue]);
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   return Children.map(children, (child: any, index) => {
     const id = child.props['data-id'];
 
@@ -83,7 +84,7 @@ export function AnimatedBackground({
             />
           )}
         </AnimatePresence>
-        <div className='z-10'>{child.props.children}</div>
+        <div className="z-10">{child.props.children}</div>
       </>
     );
   });

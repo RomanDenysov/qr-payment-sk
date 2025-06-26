@@ -9,10 +9,10 @@ export function Hero() {
     <section
       id="hero"
       aria-label="Hlavná sekcia"
-      className="relative w-full py-20 lg:py-40"
+      className="relative w-full py-10 sm:py-20 lg:py-40"
     >
-      <FadeContainer className="grid grid-cols-1 items-center gap-8 px-4 md:grid-cols-2 md:px-6">
-        <div className="flex flex-col items-center gap-4 md:items-start">
+      <FadeContainer className="grid grid-cols-1 items-center gap-6 sm:gap-8 md:grid-cols-2">
+        <div className="flex flex-col items-center gap-4 px-4 md:items-start">
           <FadeDiv>
             <Badge variant="outline">
               <span className="mr-1 size-2.5 rounded-full bg-green-400" />
@@ -20,7 +20,7 @@ export function Hero() {
             </Badge>
           </FadeDiv>
           <div className="flex flex-col gap-4">
-            <h1 className="text-center font-medium text-5xl tracking-tighter sm:text-7xl sm:leading-[4.5rem] md:text-left">
+            <h1 className="text-center font-medium text-4xl tracking-tighter sm:text-7xl sm:leading-[4.5rem] md:text-left">
               <Balancer>
                 <FadeSpan className="text-balance xl:text-nowrap">
                   Okamžité prevody s
@@ -67,7 +67,7 @@ const HeroDecorator = ({ children }: { children: ReactNode }) => (
       className="absolute inset-0 bg-radial from-white/5 via-transparent to-40% to-transparent dark:from-white/3"
     />
     {/* Content container - centered card */}
-    <div className="absolute inset-0 flex items-center justify-center p-12">
+    <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-12">
       {children}
     </div>
   </div>

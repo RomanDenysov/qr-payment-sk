@@ -1,11 +1,11 @@
 'use client';
 
-import { signIn } from '@/lib/auth-client';
+import { FadeDiv } from '@/components/motion/fade';
+import { Button } from '@/components/ui/button';
+import { signIn } from '@/lib/auth/client';
 import { cn } from '@/lib/utils';
 import { Loader2Icon } from 'lucide-react';
 import { useTransition } from 'react';
-import { FadeDiv } from '../motion/fade';
-import { Button } from '../ui/button';
 
 export function ProvidersForm({ flagValue }: { flagValue: boolean }) {
   const [isPending, startTransition] = useTransition();

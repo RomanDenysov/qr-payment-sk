@@ -1,10 +1,10 @@
 'use client';
 
+import { FadeDiv, FadeSpan } from '@/components/motion/fade';
+import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useEffect, useState } from 'react';
-import { FadeDiv, FadeSpan } from '../motion/fade';
-import { Button } from '../ui/button';
 import { EmailForm } from './email-form';
 import { OtpForm } from './otp-form';
 

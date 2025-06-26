@@ -27,6 +27,16 @@ export const usersTable = createTable('user', {
   // Simple user group for feature flag targeting
   userGroup: varchar('user_group', { length: 50 }).default('user'), // 'user', 'beta_tester', 'admin', 'vip'
 
+  // 🆕 QR Limit System Fields
+  monthlyQrLimit: integer('monthly_qr_limit').default(50).notNull(),
+  qrCodesUsedThisMonth: integer('qr_codes_used_this_month')
+    .default(0)
+    .notNull(),
+  topUpCount: integer('top_up_count').default(0).notNull(),
+  subscriptionPlan: varchar('subscription_plan', { length: 50 }), // null = free, 'starter' = paid
+  limitResetDate: date('limit_reset_date').defaultNow().notNull(),
+  totalSpentOnTopups: integer('total_spent_on_topups').default(0).notNull(), // in cents
+
   createdAt: timestamp('created_at')
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
@@ -303,6 +313,29 @@ export const platformStatsTable = createTable(
   (table) => [index('idx_platform_stats_date').on(table.date)]
 );
 
+// 🆕 New table for tracking limit purchases
+export const limitPurchasesTable = createTable(
+  'limit_purchases',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => usersTable.id, { onDelete: 'cascade' }),
+    purchaseType: varchar('purchase_type', { length: 20 }).notNull(), // 'topup' | 'subscription'
+    previousLimit: integer('previous_limit').notNull(),
+    newLimit: integer('new_limit').notNull(),
+    amountPaid: integer('amount_paid').notNull(), // in cents (e.g., 299 = €2.99)
+    stripePaymentIntentId: varchar('stripe_payment_intent_id', { length: 255 }),
+    purchasedAt: timestamp('purchased_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_limit_purchases_user_id').on(table.userId),
+    index('idx_limit_purchases_user_date').on(table.userId, table.purchasedAt),
+    index('idx_limit_purchases_type').on(table.purchaseType),
+  ]
+);
+
 // Define relationships for Drizzle ORM
 export const usersRelations = relations(usersTable, ({ many }) => ({
   sessions: many(sessionsTable),
@@ -312,6 +345,7 @@ export const usersRelations = relations(usersTable, ({ many }) => ({
   paymentTemplates: many(paymentTemplatesTable),
   qrGenerations: many(qrGenerationsTable),
   dailyStats: many(dailyUserStatsTable),
+  limitPurchases: many(limitPurchasesTable),
 }));
 
 export const sessionsRelations = relations(sessionsTable, ({ one }) => ({
@@ -408,6 +442,16 @@ export const dailyUserStatsRelations = relations(
   })
 );
 
+export const limitPurchasesRelations = relations(
+  limitPurchasesTable,
+  ({ one }) => ({
+    user: one(usersTable, {
+      fields: [limitPurchasesTable.userId],
+      references: [usersTable.id],
+    }),
+  })
+);
+
 export const schema = {
   user: usersTable,
   session: sessionsTable,
@@ -424,6 +468,7 @@ export const schema = {
   qrGenerationsTable,
   dailyUserStatsTable,
   platformStatsTable,
+  limitPurchasesTable,
 };
 
 // Type exports for use throughout the application
@@ -456,3 +501,6 @@ export type NewDailyUserStats = typeof dailyUserStatsTable.$inferInsert;
 
 export type PlatformStats = typeof platformStatsTable.$inferSelect;
 export type NewPlatformStats = typeof platformStatsTable.$inferInsert;
+
+export type LimitPurchase = typeof limitPurchasesTable.$inferSelect;
+export type NewLimitPurchase = typeof limitPurchasesTable.$inferInsert;

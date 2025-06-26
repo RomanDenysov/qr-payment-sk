@@ -11,10 +11,7 @@ import { Stats } from './components/stats';
 // Stats loading component
 function StatsLoading() {
   return (
-    <section
-      aria-label="Stats Loading"
-      className="mx-auto w-full px-4 py-20 md:px-6"
-    >
+    <section aria-label="Stats Loading" className="mx-auto w-full py-20">
       <FadeContainer className="grid grid-cols-1 gap-8 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <FadeDiv key={i}>

@@ -10,7 +10,7 @@ export function Features() {
       aria-label="Features"
       className="w-full py-20 lg:py-40"
     >
-      <FadeContainer className="grid grid-cols-1 items-center gap-8 px-4 md:px-6">
+      <FadeContainer className="grid grid-cols-1 items-center gap-8 px-4">
         <div className="flex flex-col items-start gap-4 md:items-center">
           <FadeDiv>
             <Badge variant="outline">Výhody</Badge>

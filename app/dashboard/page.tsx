@@ -62,7 +62,7 @@ export default async function DashboardPage() {
             <CardContent>
               {recentHistory.data && recentHistory.data.length > 0 ? (
                 <div className="space-y-3">
-                  {recentHistory.data.map((item) => (
+                  {recentHistory.data.map((item: any) => (
                     <div
                       key={item.id}
                       className="flex items-center justify-between border-b pb-3 last:border-b-0 last:pb-0"
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
                           {formatCurrency(item.amount.toString())}
                         </p>
                         <Badge variant="secondary" className="text-xs">
-                          {/* TODO: Add IBAN name */}
+                          {item.variableSymbol}
                         </Badge>
                       </div>
                     </div>
@@ -121,8 +121,10 @@ export default async function DashboardPage() {
           </Card>
         </FadeDiv>
 
-        {/* Subscription Card */}
-        <FadeDiv>{/* <SubscriptionCard /> */}</FadeDiv>
+        {/* QR Usage Card */}
+        {/* <FadeDiv>
+          <QrUsageCard />
+        </FadeDiv> */}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -141,7 +143,7 @@ export default async function DashboardPage() {
             <CardContent>
               {templates.data && templates.data.length > 0 ? (
                 <div className="space-y-3">
-                  {templates.data.slice(0, 3).map((template) => (
+                  {templates.data.slice(0, 3).map((template: any) => (
                     <div
                       key={template.id}
                       className="flex items-center justify-between border-b pb-3 last:border-b-0 last:pb-0"
@@ -194,28 +196,38 @@ export default async function DashboardPage() {
           </Card>
         </FadeDiv>
 
-        {/* Placeholder for future feature */}
+        {/* Quick Actions */}
         <FadeDiv className="lg:col-span-2">
           <Card className="size-full shadow-xl">
             <CardHeader>
-              <CardTitle>Nastavenia účtu</CardTitle>
-              <CardDescription>
-                Spravujte svoje účtovné údaje a predvoľby
-              </CardDescription>
+              <CardTitle>Rýchle akcie</CardTitle>
+              <CardDescription>Najčastejšie používané funkcie</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Link href="/dashboard/settings">
-                  <Button variant="outline" className="w-full">
-                    Nastavenia účtu
-                  </Button>
-                </Link>
-                <Link href="/dashboard/billing">
-                  <Button variant="outline" className="w-full">
-                    Účtovné údaje
-                  </Button>
-                </Link>
-              </div>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <Link href="/dashboard/generator">
+                <Button variant="outline" className="h-20 w-full flex-col">
+                  <QrCodeIcon className="mb-2 h-6 w-6" />
+                  Nový QR kód
+                </Button>
+              </Link>
+              <Link href="/dashboard/templates">
+                <Button variant="outline" className="h-20 w-full flex-col">
+                  <CreditCardIcon className="mb-2 h-6 w-6" />
+                  Spravovať šablóny
+                </Button>
+              </Link>
+              <Link href="/dashboard/history">
+                <Button variant="outline" className="h-20 w-full flex-col">
+                  <QrCodeIcon className="mb-2 h-6 w-6" />
+                  História QR kódov
+                </Button>
+              </Link>
+              <Link href="/dashboard/analytics">
+                <Button variant="outline" className="h-20 w-full flex-col">
+                  <QrCodeIcon className="mb-2 h-6 w-6" />
+                  Analytika
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </FadeDiv>

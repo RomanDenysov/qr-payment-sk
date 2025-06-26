@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatedBackground } from '@/components/motion-primitives/animated-background';
+import { AnimatedBackground } from '@/components/motion/animated-background';
 import { Logo, LogoSmall } from '@/components/shared/logo';
 import { buttonVariants } from '@/components/ui/button';
 import {
@@ -41,7 +41,7 @@ export function Header({ isSignedIn }: { isSignedIn: boolean }) {
     <header className={cn('sticky top-0 z-50 mx-auto')}>
       <div
         className={cn(
-          'container mx-auto max-w-7xl border-transparent border-b px-4 transition-all duration-300 md:px-6',
+          'container mx-auto max-w-7xl border-transparent border-b px-4 transition-all duration-300',
           scrolled
             ? 'border-border bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/80'
             : 'border-transparent bg-background'

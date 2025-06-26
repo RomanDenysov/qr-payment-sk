@@ -11,9 +11,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider>
       <AppSidebar>
         {/* <DashboardHeader /> */}
-        <div className="container relative mx-auto max-w-7xl px-4 py-8 md:px-6">
-          {children}
-        </div>
+        <div className="container relative mx-auto max-w-7xl">{children}</div>
       </AppSidebar>
     </SidebarProvider>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useIsMobile } from '@/hooks/use-mobile';
-import { signOut, useSession } from '@/lib/auth-client';
+import { signOut, useSession } from '@/lib/auth/client';
 import { BellIcon, CreditCardIcon, LogOutIcon, User2Icon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

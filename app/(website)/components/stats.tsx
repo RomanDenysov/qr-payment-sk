@@ -34,7 +34,7 @@ export async function Stats() {
       <section
         aria-label="Stats"
         id="stats"
-        className="mx-auto w-full px-4 py-20 md:px-6"
+        className="mx-auto w-full px-4 py-20"
       >
         <div className="text-center text-muted-foreground">
           <p>Statistiky sa momentálne nedajú načítať</p>
@@ -49,7 +49,7 @@ export async function Stats() {
     <section
       aria-label="Stats"
       id="stats"
-      className="mx-auto w-full px-4 py-20 md:px-6"
+      className="mx-auto w-full px-4 py-20"
     >
       <FadeContainer className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
         {statItems.map((stat, i) => (

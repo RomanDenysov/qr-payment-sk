@@ -1,4 +1,3 @@
-import { env } from '@/env';
 import {
   BarChart3Icon,
   HistoryIcon,
@@ -7,8 +6,6 @@ import {
   QrCodeIcon,
   SettingsIcon,
 } from 'lucide-react';
-
-export const isDev = env.NODE_ENV === 'development';
 
 export const dashboardNavItems = [
   {

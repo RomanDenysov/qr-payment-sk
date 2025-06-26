@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession } from '@/lib/auth-client';
+import { useSession } from '@/lib/auth/client';
 
 export function useUser() {
   const { data: session, isPending, refetch, error } = useSession();

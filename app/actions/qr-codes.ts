@@ -2,14 +2,9 @@
 
 import db from '@/db';
 import { businessProfilesTable, qrGenerationsTable } from '@/db/schema';
-import { trackUserActivity } from '@/lib/analytics';
 import { eurosToCents } from '@/lib/format-utils';
-import { getBySquareQR } from '@/lib/get-bysquare-qr';
-import {
-  authActionClient,
-  createSuccessResponse,
-  publicActionClient,
-} from '@/lib/safe-action';
+import { getBySquareQR } from '@/lib/qr/get-bysquare-qr';
+import { processQrGeneration } from '@/lib/rate-limits';
 import { eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import QRCode from 'qrcode';
@@ -59,88 +54,77 @@ async function generateUniqueVariableSymbol(): Promise<string> {
   }
 }
 
-// Authenticated QR generation action
-export const generateQRCodeAuth = authActionClient
-  .metadata({
-    actionName: 'generateQRCodeAuth',
-    requiresAuth: true,
-  })
-  .schema(qrGenerationSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const { userId, usageStatus } = ctx;
+// Authenticated QR generation action with new limit system
+export const generateQRCodeAuth = async (
+  userId: string,
+  parsedInput: QRGenerationInput
+) => {
+  // Check limits and increment usage using new system
+  await processQrGeneration();
 
-    // Get user profile
-    const profile = await db.query.businessProfilesTable.findFirst({
-      where: eq(businessProfilesTable.userId, userId),
-    });
-
-    if (!profile) {
-      throw new Error('User profile not found');
-    }
-
-    // Generate variable symbol if not provided
-    const variableSymbol =
-      parsedInput.variableSymbol || (await generateUniqueVariableSymbol());
-
-    // Generate BySquare QR data
-    const qrData = await getBySquareQR({
-      iban: parsedInput.iban,
-      amount: parsedInput.amount,
-      variableSymbol,
-      paymentNote: parsedInput.paymentNote,
-    });
-
-    // Generate QR code image
-    const qrCodeUrl = await QRCode.toDataURL(qrData, {
-      width: 512,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF',
-      },
-      errorCorrectionLevel: 'M',
-    });
-
-    // Save generation record
-    const qrGeneration = await db
-      .insert(qrGenerationsTable)
-      .values({
-        userId: userId,
-        templateName: 'One-time payment', // Default template name
-        amount: eurosToCents(parsedInput.amount), // Convert EUR to cents using utility
-        variableSymbol: variableSymbol, // Now a string, no BigInt conversion needed
-        qrData,
-        iban: parsedInput.iban,
-        note: parsedInput.paymentNote,
-      })
-      .returning();
-
-    // Track user activity for analytics
-    await trackUserActivity(userId, {
-      qrCodesGenerated: 1,
-      revenue: eurosToCents(parsedInput.amount),
-    });
-
-    // Revalidate relevant pages
-    revalidatePath('/dashboard');
-    revalidatePath('/dashboard/history');
-
-    return createSuccessResponse(
-      {
-        qrId: qrGeneration[0].id,
-        qrData,
-        qrCodeUrl,
-        variableSymbol,
-        usageStatus: {
-          used: usageStatus.used + 1,
-          remaining: usageStatus.remaining - 1,
-          limit: usageStatus.limit,
-          plan: usageStatus.plan,
-        },
-      },
-      'QR code generated successfully'
-    );
+  // Get user profile
+  const profile = await db.query.businessProfilesTable.findFirst({
+    where: eq(businessProfilesTable.userId, userId),
   });
+
+  if (!profile) {
+    throw new Error('User profile not found');
+  }
+
+  // Generate BySquare QR data
+  const qrData = await getBySquareQR({
+    iban: parsedInput.iban,
+    amount: parsedInput.amount,
+    variableSymbol:
+      parsedInput.variableSymbol || (await generateUniqueVariableSymbol()),
+    paymentNote: parsedInput.paymentNote,
+  });
+
+  // Generate QR code image
+  const qrCodeUrl = await QRCode.toDataURL(qrData, {
+    width: 512,
+    margin: 2,
+    color: {
+      dark: '#000000',
+      light: '#FFFFFF',
+    },
+    errorCorrectionLevel: 'M',
+  });
+
+  // Save generation record
+  const qrGeneration = await db
+    .insert(qrGenerationsTable)
+    .values({
+      userId: userId,
+      templateName: 'One-time payment', // Default template name
+      amount: eurosToCents(parsedInput.amount), // Convert EUR to cents using utility
+      variableSymbol: parsedInput.variableSymbol, // Now a string, no BigInt conversion needed
+      qrData,
+      iban: parsedInput.iban,
+      note: parsedInput.paymentNote,
+    })
+    .returning();
+
+  // Track user activity for analytics
+  await trackUserActivity(userId, {
+    qrCodesGenerated: 1,
+    revenue: eurosToCents(parsedInput.amount),
+  });
+
+  // Revalidate relevant pages
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/history');
+
+  return createSuccessResponse(
+    {
+      qrId: qrGeneration[0].id,
+      qrData,
+      qrCodeUrl,
+      variableSymbol: parsedInput.variableSymbol,
+    },
+    'QR code generated successfully'
+  );
+};
 
 // Anonymous QR generation action (limited functionality)
 export const generateQRCodeAnonymous = publicActionClient
@@ -150,6 +134,9 @@ export const generateQRCodeAnonymous = publicActionClient
   })
   .schema(qrGenerationSchema)
   .action(async ({ parsedInput }) => {
+    // TODO: Implement anonymous rate limiting with IP-based tracking
+    // For now, allow anonymous generation without limits
+
     // Generate variable symbol
     const variableSymbol =
       parsedInput.variableSymbol || (await generateUniqueVariableSymbol());
@@ -200,22 +187,106 @@ export const generateQRFromTemplate = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     const { userId } = ctx;
 
-    // Get user profile
-    const profile = await db.query.businessProfilesTable.findFirst({
-      where: eq(businessProfilesTable.userId, userId),
+    // Check limits and increment usage using new system
+    await processQrGeneration();
+
+    // Get template details
+    const template = await db.query.paymentTemplatesTable.findFirst({
+      where: (templates, { eq, and }) =>
+        and(
+          eq(templates.id, parsedInput.templateId),
+          eq(templates.userId, userId),
+          eq(templates.isActive, true)
+        ),
     });
 
-    if (!profile) {
-      throw new Error('User profile not found');
+    if (!template) {
+      throw new Error('Template not found or inactive');
     }
 
-    // TODO: Implement template fetching and merging with overrides
-    // This would fetch the template and merge with any overrides
+    // Merge template data with overrides
+    const finalData = {
+      iban: parsedInput.overrides?.iban || template.iban,
+      amount: parsedInput.overrides?.amount || template.amount,
+      variableSymbol: parsedInput.overrides?.variableSymbol,
+      constantSymbol: parsedInput.overrides?.constantSymbol,
+      paymentNote: parsedInput.overrides?.paymentNote || template.description,
+    };
+
+    // Generate variable symbol if not provided
+    const variableSymbol =
+      finalData.variableSymbol || (await generateUniqueVariableSymbol());
+
+    // Generate BySquare QR data
+    const qrData = await getBySquareQR({
+      iban: finalData.iban,
+      amount: finalData.amount,
+      variableSymbol,
+      paymentNote: finalData.paymentNote,
+    });
+
+    // Generate QR code image
+    const qrCodeUrl = await QRCode.toDataURL(qrData, {
+      width: 512,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF',
+      },
+      errorCorrectionLevel: 'M',
+    });
+
+    // Save generation record
+    const qrGeneration = await db
+      .insert(qrGenerationsTable)
+      .values({
+        userId: userId,
+        templateId: template.id,
+        templateName: template.name,
+        amount: eurosToCents(finalData.amount),
+        variableSymbol: variableSymbol,
+        qrData,
+        iban: finalData.iban,
+        note: finalData.paymentNote,
+      })
+      .returning();
+
+    // Increment template usage count
+    await db
+      .update(template)
+      .set({ usageCount: sql`${template.usageCount} + 1` })
+      .where(eq(template.id, template.id));
+
+    // Track user activity
+    await trackUserActivity(userId, {
+      qrCodesGenerated: 1,
+      templatesUsed: 1,
+      revenue: eurosToCents(finalData.amount),
+    });
+
+    // Revalidate relevant pages
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/history');
+    revalidatePath('/dashboard/templates');
+
+    return createSuccessResponse(
+      {
+        qrId: qrGeneration[0].id,
+        qrData,
+        qrCodeUrl,
+        variableSymbol,
+        templateName: template.name,
+      },
+      'QR code generated from template successfully'
+    );
   });
 
-// Export types for frontend usage
+// Type exports
 export type QRGenerationInput = z.infer<typeof qrGenerationSchema>;
 export type QRGenerationResult = Awaited<ReturnType<typeof generateQRCodeAuth>>;
 export type AnonymousQRResult = Awaited<
   ReturnType<typeof generateQRCodeAnonymous>
+>;
+export type TemplateQRResult = Awaited<
+  ReturnType<typeof generateQRFromTemplate>
 >;

@@ -1,14 +1,6 @@
 'use client';
 
-import { emailOtp, signIn } from '@/lib/auth-client';
-import { isDev } from '@/lib/configs';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2Icon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -16,8 +8,20 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../ui/form';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp';
+} from '@/components/ui/form';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@/components/ui/input-otp';
+import { emailOtp, signIn } from '@/lib/auth/client';
+import { isDev } from '@/lib/config';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2Icon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 const otpSchema = z.object({
   otp: z.string().min(6, 'OTP musí mať 6 znakov'),

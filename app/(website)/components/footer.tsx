@@ -89,7 +89,7 @@ export function Footer() {
       <div className="absolute inset-0 bg-[size:20px_20px] bg-grid-white/10 [mask-image:radial-gradient(white,transparent_85%)]" />
 
       <FadeContainer className="relative">
-        <div className="container mx-auto max-w-7xl px-4 pt-16 pb-8 md:px-6 lg:pt-20">
+        <div className="container mx-auto max-w-7xl px-4 pt-16 pb-8 lg:pt-20">
           <div className="grid gap-12 lg:grid-cols-5">
             {/* Company Info */}
             <FadeDiv className="lg:col-span-2">

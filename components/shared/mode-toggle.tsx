@@ -1,7 +1,7 @@
 'use client';
 import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { AnimatedBackground } from '../motion-primitives/animated-background';
+import { AnimatedBackground } from '../motion/animated-background';
 
 type ThemeOption = 'light' | 'dark' | 'system';
 

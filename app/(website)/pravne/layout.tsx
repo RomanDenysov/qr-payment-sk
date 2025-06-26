@@ -30,7 +30,7 @@ export default function PravneLayout({
 }) {
   return (
     <LegalDecorator>
-      <FadeContainer className="container mx-auto max-w-5xl py-8 sm:px-4 md:px-6">
+      <FadeContainer className="container mx-auto max-w-5xl py-8 sm:px-4">
         {children}
       </FadeContainer>
     </LegalDecorator>

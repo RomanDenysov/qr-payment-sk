@@ -7,7 +7,6 @@ import {
   usersTable,
 } from '@/db/schema';
 import { centsToEuros } from '@/lib/format-utils';
-import { protectedAction } from '@/lib/safe-action';
 import { unstable_cache } from '@/lib/unstable-cache';
 import { and, count, eq, sum } from 'drizzle-orm';
 
@@ -132,6 +131,6 @@ const getCachedUserStats = unstable_cache(
   }
 );
 
-export const getUserStatsAction = protectedAction.action(async ({ ctx }) => {
-  return await getCachedUserStats(ctx.userId);
-});
+export const getUserStatsAction = async (userId: string) => {
+  return await getCachedUserStats(userId);
+};

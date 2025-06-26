@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatedBackground } from '@/components/motion-primitives/animated-background';
+import { AnimatedBackground } from '@/components/motion/animated-background';
 import { Logo } from '@/components/shared/logo';
 import { UserButton } from '@/components/user/user-button';
 import {
@@ -43,7 +43,7 @@ export function DashboardHeader() {
     navigationItems[0];
 
   return (
-    <header className="mx-auto flex min-h-16 max-w-7xl items-center justify-between border-accent border-b px-4 md:px-6">
+    <header className="mx-auto flex min-h-16 max-w-7xl items-center justify-between border-accent border-b px-4">
       <div className="flex w-full flex-col gap-4 md:gap-8">
         <div className="flex max-h-16 w-full items-center justify-between py-2">
           <Logo />

@@ -13,7 +13,7 @@ export function CTA() {
       className="group w-full py-20 lg:py-40"
     >
       <CTADecorator>
-        <FadeContainer className="mx-auto max-w-4xl px-4 md:px-6">
+        <FadeContainer className="mx-auto max-w-4xl px-4">
           <FadeDiv className="group">
             <div className="flex flex-col items-center gap-8 p-12 text-center">
               <div className="flex flex-col items-center gap-4">
@@ -42,15 +42,20 @@ export function CTA() {
                 <Button
                   asChild
                   size="lg"
-                  className="group/btn bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="group/btn w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto"
                 >
-                  <Link href="/sign-up" className="flex items-center gap-2">
+                  <Link href="/autorizacia" className="flex items-center gap-2">
                     Registrovať sa zdarma
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                    <ArrowRight className="size-4 transition-transform group-hover/btn:translate-x-1" />
                   </Link>
                 </Button>
 
-                <Button asChild variant="outline" size="lg">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
                   <Link href="#pricing">Pozrieť cenník</Link>
                 </Button>
               </div>

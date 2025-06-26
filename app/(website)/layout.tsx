@@ -17,9 +17,7 @@ export default async function WebsiteLayout({ children }: WebsiteLayoutProps) {
   return (
     <>
       <Header isSignedIn={isSignedIn} />
-      <main className="container mx-auto max-w-7xl px-4 md:px-6">
-        {children}
-      </main>
+      <main className="container mx-auto max-w-7xl px-4">{children}</main>
       <Footer />
     </>
   );

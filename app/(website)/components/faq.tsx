@@ -57,7 +57,7 @@ export function FAQ() {
       aria-label="Často kladené otázky"
       className="w-full py-20 lg:py-40"
     >
-      <FadeContainer className="mx-auto max-w-4xl px-4 md:px-6">
+      <FadeContainer className="mx-auto max-w-4xl px-4">
         <div className="flex flex-col items-center gap-4 text-center">
           <FadeDiv>
             <Badge variant="outline">FAQ</Badge>

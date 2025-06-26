@@ -7,7 +7,7 @@ export default function Loading() {
     <>
       {/* Hero skeleton */}
       <section className="relative w-full py-20 lg:py-40">
-        <FadeContainer className="grid grid-cols-1 items-center gap-8 px-4 md:grid-cols-2 md:px-6">
+        <FadeContainer className="grid grid-cols-1 items-center gap-8 px-4 md:grid-cols-2 ">
           <div className="flex flex-col items-center gap-4 md:items-start">
             <Skeleton className="h-6 w-24" />
             <div className="flex flex-col gap-4">
@@ -26,7 +26,7 @@ export default function Loading() {
       {/* Stats skeleton */}
       <section
         aria-label="Stats Loading"
-        className="mx-auto w-full px-4 py-20 md:px-6"
+        className="mx-auto w-full px-4 py-20 "
       >
         <FadeContainer className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -38,7 +38,7 @@ export default function Loading() {
       </section>
 
       {/* Features skeleton */}
-      <section className="mx-auto w-full px-4 py-20 md:px-6">
+      <section className="mx-auto w-full px-4 py-20 ">
         <FadeContainer className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <FadeDiv key={i}>

@@ -1,250 +1,303 @@
 'use client';
 
 import { generateQRCodeAuth } from '@/app/actions/qr-codes';
-import { IBANInput } from '@/components/shared/iban-input';
+import { IbanInput } from '@/components/shared/iban-input';
 import { ShowQrDrawer } from '@/components/show-qr-drawer';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { NumberScrubber } from '@/components/ui/number-scrubber';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertCircle, Loader2Icon, QrCodeIcon } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { useUser } from '@/hooks/use-user';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2, QrCode } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+
+// Form validation schema matching the server action
+const qrGenerationSchema = z.object({
+  iban: z
+    .string()
+    .regex(/^SK\d{22}$/, 'Invalid Slovak IBAN format')
+    .transform((val) => val.replace(/\s+/g, '').toUpperCase()),
+  amount: z
+    .number()
+    .min(0.01, 'Amount must be at least €0.01')
+    .max(99999999.99, 'Amount cannot exceed €99,999,999.99'),
+  variableSymbol: z
+    .string()
+    .regex(/^\d{1,10}$/, 'Variable symbol must be 1-10 digits')
+    .optional()
+    .or(z.literal('')),
+  constantSymbol: z
+    .string()
+    .regex(/^\d{1,10}$/, 'Constant symbol must be 1-10 digits')
+    .optional()
+    .or(z.literal('')),
+  paymentNote: z
+    .string()
+    .max(140, 'Payment note cannot exceed 140 characters')
+    .optional(),
+});
+
+type QrGenerationInput = z.infer<typeof qrGenerationSchema>;
+
+interface QrResult {
+  qrId: string;
+  qrData: string;
+  qrCodeUrl: string;
+  variableSymbol: string;
+  usageStatus?: {
+    used: number;
+    remaining: number;
+    limit: number;
+    plan: string;
+  };
+}
 
 export function DashboardQrGenerator() {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const user = useUser();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [qrResult, setQrResult] = useState<QrResult | null>(null);
   const [showQrDrawer, setShowQrDrawer] = useState(false);
 
-  const { execute, result, isExecuting } = useAction(generateQRCodeAuth);
+  const form = useForm<QrGenerationInput>({
+    resolver: zodResolver(qrGenerationSchema),
+    defaultValues: {
+      iban: '',
+      amount: 0,
+      variableSymbol: '',
+      constantSymbol: '',
+      paymentNote: '',
+    },
+  });
 
-  const ibanRef = useRef<HTMLInputElement>(null);
-  const amountRef = useRef<HTMLInputElement>(null);
-
-  // Handle successful QR generation
-  useEffect(() => {
-    if (result?.data?.data?.qrCodeUrl) {
-      setQrCodeUrl(result.data.data.qrCodeUrl);
-      setShowQrDrawer(true);
+  const handleSubmit = form.handleSubmit(async (data) => {
+    if (!user) {
+      toast.error('Musíte byť prihlásený pre generovanie QR kódov');
+      return;
     }
-  }, [result]);
 
-  // Listen for template selection events
-  useEffect(() => {
-    const handleUseTemplate = (event: CustomEvent) => {
-      const template = event.detail;
+    setIsGenerating(true);
 
-      // Fill form with template data
-      if (ibanRef.current) ibanRef.current.value = template.iban;
-      if (amountRef.current) amountRef.current.value = template.amount;
+    try {
+      // Clean up empty optional fields
+      const cleanData = {
+        ...data,
+        variableSymbol: data.variableSymbol || undefined,
+        constantSymbol: data.constantSymbol || undefined,
+        paymentNote: data.paymentNote || undefined,
+      };
 
-      // Reset template save option
-      setSaveAsTemplate(false);
-    };
+      const result = await generateQRCodeAuth(cleanData);
 
-    window.addEventListener('useTemplate', handleUseTemplate as EventListener);
-    return () => {
-      window.removeEventListener(
-        'useTemplate',
-        handleUseTemplate as EventListener
-      );
-    };
-  }, []);
+      if (result.data) {
+        setQrResult(result.data);
+        setShowQrDrawer(true);
 
-  // Handle Enter key in IBAN field to move to amount field
-  const handleIbanKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      amountRef.current?.focus();
+        toast.success('QR kód úspešne vygenerovaný');
+
+        // Show usage status if available
+        if (result.data.usageStatus) {
+          const { used, remaining, limit, plan } = result.data.usageStatus;
+          if (limit !== -1 && remaining <= 10) {
+            toast.warning(
+              `Pozor: Zostáva vám už len ${remaining} QR kódov v ${plan} pláne`
+            );
+          }
+        }
+      } else if (result.serverError) {
+        toast.error(result.serverError);
+      }
+    } catch (error) {
+      console.error('QR generation error:', error);
+      toast.error('Nepodarilo sa vygenerovať QR kód');
+    } finally {
+      setIsGenerating(false);
     }
+  });
+
+  const handleCloseDrawer = () => {
+    setShowQrDrawer(false);
+    // Keep qrResult for potential re-opening
   };
 
-  const handleSubmit = async (formData: FormData) => {
-    const data = {
-      iban: formData.get('iban') as string,
-      amount: Number.parseFloat(formData.get('amount') as string),
-      variableSymbol: (formData.get('variableSymbol') as string) || undefined,
-      constantSymbol: (formData.get('constantSymbol') as string) || undefined,
-      specificSymbol: (formData.get('specificSymbol') as string) || undefined,
-      paymentNote: (formData.get('paymentNote') as string) || undefined,
-      // TODO: Handle template saving
-      templateName: saveAsTemplate
-        ? (formData.get('templateName') as string)
-        : undefined,
-    };
-
-    execute(data);
-  };
+  if (!user) {
+    return (
+      <Card>
+        <CardContent className="flex h-64 items-center justify-center">
+          <div className="text-center">
+            <QrCode className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+            <h3 className="mb-2 font-medium text-lg">Prihlásenie požadované</h3>
+            <p className="text-muted-foreground">
+              Pre generovanie QR kódov sa musíte prihlásiť
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>
-      <Card>
+      <Card className="mx-auto w-full max-w-2xl">
         <CardHeader>
-          <CardTitle>Generovať QR kód</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <QrCode className="h-5 w-5" />
+            QR Generátor
+          </CardTitle>
+          <CardDescription>
+            Vytvorte BySquare QR kód pre slovenské platby
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {result?.serverError && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{result.serverError.message}</AlertDescription>
-            </Alert>
-          )}
-
-          <form action={handleSubmit} className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="iban">IBAN *</Label>
-                <IBANInput
-                  ref={ibanRef}
-                  disabled={isExecuting}
-                  id="iban"
-                  name="iban"
-                  maxLength={29}
-                  placeholder="SK31 1200 0000 1987 4263 7541"
-                  aria-describedby="iban-error"
-                  autoCapitalize="characters"
-                  onKeyDown={handleIbanKeyDown}
-                  required
-                />
-                {result?.validationErrors?.iban?._errors?.[0] && (
-                  <p id="iban-error" className="text-destructive text-sm">
-                    {result.validationErrors.iban._errors[0]}
-                  </p>
+          <Form {...form}>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* IBAN Field */}
+              <FormField
+                control={form.control}
+                name="iban"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>IBAN účet *</FormLabel>
+                    <FormControl>
+                      <IbanInput
+                        placeholder="SK1234567890123456789012"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="amount">Suma (EUR) *</Label>
-                <Input
-                  ref={amountRef}
-                  disabled={isExecuting}
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max="99999999.99"
-                  required
-                  placeholder="25.50"
-                  aria-describedby="amount-error"
-                />
-                {result?.validationErrors?.amount?._errors?.[0] && (
-                  <p id="amount-error" className="text-destructive text-sm">
-                    {result.validationErrors.amount._errors[0]}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="variableSymbol">Variabilný symbol</Label>
-                <Input
-                  disabled={isExecuting}
-                  id="variableSymbol"
-                  name="variableSymbol"
-                  placeholder="12345678"
-                  type="text"
-                  aria-describedby="variableSymbol-error"
-                  maxLength={10}
-                />
-                {result?.validationErrors?.variableSymbol?._errors?.[0] && (
-                  <p
-                    id="variableSymbol-error"
-                    className="text-destructive text-sm"
-                  >
-                    {result.validationErrors.variableSymbol._errors[0]}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="constantSymbol">Konštantný symbol</Label>
-                <Input
-                  disabled={isExecuting}
-                  id="constantSymbol"
-                  name="constantSymbol"
-                  placeholder="0308"
-                  type="text"
-                  maxLength={4}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="specificSymbol">Špecifický symbol</Label>
-                <Input
-                  disabled={isExecuting}
-                  id="specificSymbol"
-                  name="specificSymbol"
-                  placeholder="1234567890"
-                  type="text"
-                  maxLength={10}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="paymentNote">Poznámka k platbe</Label>
-              <Textarea
-                disabled={isExecuting}
-                id="paymentNote"
-                name="paymentNote"
-                placeholder="Popis platby..."
-                maxLength={140}
-                rows={3}
               />
-            </div>
 
-            {/* Save as Template */}
-            <Card className="border-dashed">
-              <CardContent className="pt-6">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="saveAsTemplate"
-                    name="saveAsTemplate"
-                    checked={saveAsTemplate}
-                    onCheckedChange={(checked) => setSaveAsTemplate(!!checked)}
-                    disabled={isExecuting}
-                  />
-                  <Label htmlFor="saveAsTemplate" className="text-sm">
-                    Uložiť ako šablónu
-                  </Label>
-                </div>
-
-                {saveAsTemplate && (
-                  <div className="mt-4 space-y-2">
-                    <Label htmlFor="templateName">Názov šablóny</Label>
-                    <Input
-                      disabled={isExecuting}
-                      id="templateName"
-                      name="templateName"
-                      placeholder="Moja šablóna"
-                      maxLength={100}
-                    />
-                  </div>
+              {/* Amount Field */}
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Suma (EUR) *</FormLabel>
+                    <FormControl>
+                      <NumberScrubber
+                        placeholder="0.00"
+                        min={0.01}
+                        max={99999999.99}
+                        step={0.01}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </CardContent>
-            </Card>
+              />
 
-            <Button type="submit" className="w-full" disabled={isExecuting}>
-              {isExecuting ? (
-                <>
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                  Generujem QR kód...
-                </>
-              ) : (
-                <>
-                  <QrCodeIcon className="mr-2 h-4 w-4" />
-                  Vygenerovať QR kód
-                </>
-              )}
-            </Button>
-          </form>
+              {/* Optional Fields */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="variableSymbol"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Variabilný symbol</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="1234567890"
+                          maxLength={10}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="constantSymbol"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Konštantný symbol</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0308" maxLength={10} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Payment Note */}
+              <FormField
+                control={form.control}
+                name="paymentNote"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Poznámka k platbe</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Popis platby (max 140 znakov)"
+                        maxLength={140}
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                disabled={isGenerating}
+                className="w-full"
+                size="lg"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generuje sa...
+                  </>
+                ) : (
+                  <>
+                    <QrCode className="mr-2 h-4 w-4" />
+                    Vygenerovať QR kód
+                  </>
+                )}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
 
-      {showQrDrawer && qrCodeUrl && <ShowQrDrawer qrCodeUrl={qrCodeUrl} />}
+      {/* QR Result Drawer */}
+      {qrResult && (
+        <ShowQrDrawer
+          open={showQrDrawer}
+          onClose={handleCloseDrawer}
+          qrData={qrResult.qrData}
+          qrCodeUrl={qrResult.qrCodeUrl}
+          variableSymbol={qrResult.variableSymbol}
+          usageStatus={qrResult.usageStatus}
+        />
+      )}
     </>
   );
 }

@@ -33,7 +33,7 @@ const plans = [
     ],
     popular: false,
     cta: 'Začať zdarma',
-    href: '/sign-up',
+    href: '/autorizacia',
   },
   {
     name: 'Starter',
@@ -51,7 +51,7 @@ const plans = [
     notIncluded: ['Webhooks', 'Prioritná podpora', 'White-label riešenie'],
     popular: true,
     cta: 'Vybrať Starter',
-    href: '/sign-up?plan=starter',
+    href: '/autorizacia?plan=starter',
   },
   {
     name: 'Professional',
@@ -71,7 +71,7 @@ const plans = [
     notIncluded: [],
     popular: false,
     cta: 'Vybrať Professional',
-    href: '/sign-up?plan=professional',
+    href: '/autorizacia?plan=professional',
   },
 ];
 
@@ -82,7 +82,7 @@ export function Pricing() {
       aria-label="Cenové plány"
       className="w-full py-20 lg:py-40"
     >
-      <FadeContainer className="mx-auto max-w-6xl px-4 md:px-6">
+      <FadeContainer className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center gap-4 text-center">
           <FadeDiv>
             <Badge variant="outline">Cenník</Badge>

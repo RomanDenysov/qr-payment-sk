@@ -1,13 +1,12 @@
 import db from '@/db';
 import { schema } from '@/db/schema';
 import { env } from '@/env';
+import { sendOTPEmail } from '@/lib/email';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createAuthMiddleware } from 'better-auth/api';
 import { nextCookies } from 'better-auth/next-js';
 import { apiKey, emailOTP, openAPI, organization } from 'better-auth/plugins';
-import { trackUserActivity } from './analytics';
-import { sendOTPEmail } from './email';
 
 export const auth = betterAuth({
   appName: 'QR Platby',
@@ -81,10 +80,10 @@ export const auth = betterAuth({
  */
 async function initializeUserStats(userId: string) {
   // Just ensure user has today's stats entry - that's it
-  await trackUserActivity(userId, {
-    qrCodesGenerated: 0,
-    templatesCreated: 0,
-    templatesUsed: 0,
-    revenue: 0,
-  });
+  // await trackUserActivity(userId, {
+  //   qrCodesGenerated: 0,
+  //   templatesCreated: 0,
+  //   templatesUsed: 0,
+  //   revenue: 0,
+  // });
 }
