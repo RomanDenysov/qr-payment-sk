@@ -1,15 +1,18 @@
-import { checkUserUsageLimit, getUserUsageStats } from '@/lib/rate-limiting';
-import { auth } from '@clerk/nextjs/server';
-import type { NextRequest } from 'next/server';
+import { auth } from '@/lib/auth';
+import { checkUserUsageLimit, getUserUsageStats } from '@/lib/rate-limits';
+import { headers } from 'next/headers';
+import { type NextRequest, NextResponse } from 'next/server';
 
 // GET endpoint for usage statistics
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const { userId } = await auth();
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
 
-    if (!userId) {
-      return Response.json(
+    if (!session?.user?.id) {
+      return NextResponse.json(
         {
           error: 'Authentication required',
           code: 'UNAUTHORIZED',
@@ -20,11 +23,11 @@ export async function GET(request: NextRequest) {
 
     // Get usage statistics
     const [usageLimit, usageStats] = await Promise.all([
-      checkUserUsageLimit(userId),
-      getUserUsageStats(userId),
+      checkUserUsageLimit(),
+      getUserUsageStats(),
     ]);
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
       data: {
         current: {
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
         code: string;
         statusCode: number;
       };
-      return Response.json(
+      return NextResponse.json(
         {
           error: rateLimitError.message,
           code: rateLimitError.code,
@@ -55,7 +58,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return Response.json(
+    return NextResponse.json(
       {
         error: 'Internal server error',
         code: 'INTERNAL_ERROR',

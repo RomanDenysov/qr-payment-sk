@@ -1,4 +1,4 @@
-import { updatePlatformStats } from '@/lib/analytics';
+import { updatePlatformStats } from '@/lib/analytics/internal';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
 /**
  * GET method for testing/status check
  */
+
+// biome-ignore lint/suspicious/useAwait: <explanation>
 export async function GET() {
   return NextResponse.json({
     endpoint: 'Analytics Platform Stats Update',
