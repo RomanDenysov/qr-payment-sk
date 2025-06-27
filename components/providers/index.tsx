@@ -7,7 +7,6 @@ import { Provider as WBProvider } from 'react-wrap-balancer';
 import { ShowQrDrawer } from '../show-qr-drawer';
 import { Toaster } from '../ui/sonner';
 import { TooltipProvider } from '../ui/tooltip';
-import { CookieConsentProvider } from './cookie-consent-provider';
 import { ThemeProvider } from './theme-provider';
 
 // Modal provider component
@@ -48,15 +47,13 @@ export async function Providers({ children }: ProvidersProps) {
           enableSystem
           disableTransitionOnChange
         >
-          <CookieConsentProvider>
-            <WBProvider>
-              <TooltipProvider>
-                {children}
-                <ModalProvider />
-              </TooltipProvider>
-            </WBProvider>
-            <Toaster />
-          </CookieConsentProvider>
+          <WBProvider>
+            <TooltipProvider>
+              {children}
+              <ModalProvider />
+            </TooltipProvider>
+          </WBProvider>
+          <Toaster />
         </ThemeProvider>
       </NuqsAdapter>
     </HypertuneProvider>
