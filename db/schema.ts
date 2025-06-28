@@ -336,8 +336,34 @@ export const limitPurchasesTable = createTable(
   ]
 );
 
+export const userConsentTable = createTable('user_consent', {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => usersTable.id, { onDelete: 'cascade' }),
+
+  // Consent preferences
+  necessary: boolean('necessary').default(true).notNull(),
+  functionality: boolean('functionality').default(false).notNull(),
+  analytics: boolean('analytics').default(false).notNull(),
+  marketing: boolean('marketing').default(false).notNull(),
+
+  // Metadata
+  consentDate: timestamp('consent_date').defaultNow().notNull(),
+  withdrawnDate: timestamp('withdrawn_date'),
+  version: text('version').default('1.0.0').notNull(),
+
+  // Audit trail
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Define relationships for Drizzle ORM
-export const usersRelations = relations(usersTable, ({ many }) => ({
+export const usersRelations = relations(usersTable, ({ many, one }) => ({
   sessions: many(sessionsTable),
   accounts: many(accountsTable),
   businessProfiles: many(businessProfilesTable),
@@ -346,6 +372,10 @@ export const usersRelations = relations(usersTable, ({ many }) => ({
   qrGenerations: many(qrGenerationsTable),
   dailyStats: many(dailyUserStatsTable),
   limitPurchases: many(limitPurchasesTable),
+  userConsent: one(userConsentTable, {
+    fields: [usersTable.id],
+    references: [userConsentTable.userId],
+  }),
 }));
 
 export const sessionsRelations = relations(sessionsTable, ({ one }) => ({
@@ -452,6 +482,13 @@ export const limitPurchasesRelations = relations(
   })
 );
 
+export const userConsentRelations = relations(userConsentTable, ({ one }) => ({
+  profile: one(businessProfilesTable, {
+    fields: [userConsentTable.userId],
+    references: [businessProfilesTable.userId],
+  }),
+}));
+
 export const schema = {
   user: usersTable,
   session: sessionsTable,
@@ -469,6 +506,7 @@ export const schema = {
   dailyUserStatsTable,
   platformStatsTable,
   limitPurchasesTable,
+  userConsentTable,
 };
 
 // Type exports for use throughout the application
@@ -504,3 +542,6 @@ export type NewPlatformStats = typeof platformStatsTable.$inferInsert;
 
 export type LimitPurchase = typeof limitPurchasesTable.$inferSelect;
 export type NewLimitPurchase = typeof limitPurchasesTable.$inferInsert;
+
+export type UserConsent = typeof userConsentTable.$inferSelect;
+export type NewUserConsent = typeof userConsentTable.$inferInsert;
